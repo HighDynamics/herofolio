@@ -60,7 +60,7 @@ export function characterContributions(
   push("ac", "Deflection", ac.deflection, "deflection");
   push("ac", "Size", ac.size, "size");
   push("ac", "Misc", ac.misc);
-  push("ac", "Dexterity", mod("dexterity"));
+  push("ac", "Dexterity", { ...mod("dexterity"), max: "maxDex" });
 
   for (const name of ["fortitude", "reflex", "will"] as SaveName[]) {
     const save = saves[name];

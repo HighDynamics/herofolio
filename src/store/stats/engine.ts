@@ -56,15 +56,21 @@ function applyStacking(lines: StatLine[]) {
   }
 }
 
-// Speed bonuses (haste's +30 to every mode) only improve movement modes the
-// character already has; they never grant a fly or swim speed.
-function requireMovementMode(key: StatKey, lines: StatLine[]) {
-  if (!key.startsWith("speed.")) return;
+// Stats that only exist with a base. Speed bonuses (haste's +30 to every mode)
+// only improve movement modes the character already has, and raising a max
+// Dex cap (mithral) needs armor that imposes one.
+const NEEDS_BASE: Record<string, (name: string) => string> = {
+  speed: (mode) => `No ${mode} speed`,
+  maxDex: (slot) => `No ${slot} max Dex to raise`,
+};
+
+function requireBase(key: StatKey, lines: StatLine[]) {
+  const [stat, name] = key.split(".");
+  const reason = NEEDS_BASE[stat];
+  if (!reason) return;
   const applied = lines.filter((l) => l.status === "applied");
-  if (applied.some((l) => l.op === "base" && l.amount > 0)) return;
-  for (const line of applied) {
-    suppress(line, `No ${key.slice("speed.".length)} speed`);
-  }
+  if (applied.some((l) => l.op === "base")) return;
+  for (const line of applied) suppress(line, reason(name));
 }
 
 // A set overrides the stat's base and every bonus and penalty. It never gives
@@ -93,13 +99,31 @@ export function createStatEngine(contributions: Contribution[]) {
   const cache = new Map<StatKey, ResolvedStat>();
   const inProgress = new Set<StatKey>();
 
-  function amountOf(c: Contribution): number {
-    if (typeof c.value === "number") return c.value;
+  // The cap on Dex to AC: the lowest of the maxDex.* stats that have a base
+  // (armor, shield, load), or undefined when nothing caps it.
+  function maxDex(): number | undefined {
+    const slots = new Set(
+      contributions
+        .map((c) => c.target)
+        .filter((t): t is StatKey => t.startsWith("maxDex.") && t !== "maxDex.*"),
+    );
+    const caps = [...slots]
+      .map((slot) => resolve(slot))
+      .filter((cap) => cap.hasBase)
+      .map((cap) => Math.max(0, cap.total));
+    return caps.length ? Math.min(...caps) : undefined;
+  }
+
+  function amountOf(c: Contribution): Pick<StatLine, "amount" | "uncapped"> {
+    if (typeof c.value === "number") return { amount: c.value };
     const from = resolve(c.value.from);
-    if (!from.hasBase) return 0;
+    if (!from.hasBase) return { amount: 0 };
     const raw =
       c.value.as === "modifier" ? abilityModifier(from.total) : from.total;
-    return c.value.max !== undefined ? Math.min(raw, c.value.max) : raw;
+    const cap = c.value.max === "maxDex" ? maxDex() : c.value.max;
+    return cap === undefined || raw <= cap
+      ? { amount: raw }
+      : { amount: cap, uncapped: raw };
   }
 
   function resolve(key: StatKey, opts: ResolveOptions = {}): ResolvedStat {
@@ -115,13 +139,13 @@ export function createStatEngine(contributions: Contribution[]) {
         .map(
           (c): StatLine => ({
             ...c,
-            amount: amountOf(c),
+            ...amountOf(c),
             status: c.condition ? "conditional" : "applied",
           }),
         )
         .filter((line) => !opts.exclude?.(line));
 
-      requireMovementMode(key, lines);
+      requireBase(key, lines);
       applyStacking(lines);
       applySet(key, lines);
 
@@ -145,7 +169,7 @@ export function createStatEngine(contributions: Contribution[]) {
     }
   }
 
-  return { resolve };
+  return { resolve, maxDex };
 }
 
 // ─── Stat-specific views ──────────────────────────────────────────────────────

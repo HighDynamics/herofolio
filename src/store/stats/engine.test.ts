@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { createStatEngine, resolveArmorClass } from "./engine";
 import { base, contribution as c } from "./testing";
 
-const dexToAc = c("ac", { from: "ability.dexterity", as: "modifier" }, {
-  label: "Dexterity",
-});
+const dexToAc = c(
+  "ac",
+  { from: "ability.dexterity", as: "modifier", max: "maxDex" },
+  { label: "Dexterity" },
+);
 
 describe("stacking", () => {
   it("applies only the highest bonus of a type", () => {
@@ -173,5 +175,81 @@ describe("armor class", () => {
     expect(ac.total.total).toBe(19);
     expect(ac.touch.total).toBe(13);
     expect(ac.flatFooted.total).toBe(16);
+  });
+});
+
+describe("max Dex", () => {
+  const cap = (slot: `maxDex.${string}`, value: number, label: string) =>
+    c(slot, value, { op: "base", label });
+  const withDex = (score: number, ...rest: ReturnType<typeof c>[]) =>
+    createStatEngine([
+      base("ac", 10),
+      base("ability.dexterity", score),
+      dexToAc,
+      ...rest,
+    ]);
+  const dexLine = (engine: ReturnType<typeof withDex>) =>
+    engine.resolve("ac").lines.find((l) => l.label === "Dexterity")!;
+
+  it("caps the Dex bonus to AC, touch AC included", () => {
+    const engine = withDex(18, cap("maxDex.armor", 1, "Full plate"));
+    expect(dexLine(engine)).toMatchObject({ amount: 1, uncapped: 4 });
+    const ac = resolveArmorClass(engine);
+    expect(ac.total.total).toBe(11);
+    expect(ac.touch.total).toBe(11);
+    expect(ac.flatFooted.total).toBe(10);
+  });
+
+  it("uses the lowest cap", () => {
+    const engine = withDex(
+      20,
+      cap("maxDex.armor", 4, "Chain shirt"),
+      cap("maxDex.shield", 2, "Tower shield"),
+    );
+    expect(engine.maxDex()).toBe(2);
+    expect(dexLine(engine).amount).toBe(2);
+  });
+
+  it("raises one cap, or every cap with maxDex.*", () => {
+    const engine = withDex(
+      20,
+      cap("maxDex.armor", 1, "Full plate"),
+      c("maxDex.armor", 2, { label: "Mithral" }),
+      cap("maxDex.shield", 2, "Tower shield"),
+    );
+    expect(engine.maxDex()).toBe(2);
+
+    const raisedEverywhere = withDex(
+      20,
+      cap("maxDex.armor", 1, "Full plate"),
+      cap("maxDex.shield", 2, "Tower shield"),
+      c("maxDex.*", 1, { label: "Armor mastery" }),
+    );
+    expect(raisedEverywhere.maxDex()).toBe(2);
+  });
+
+  it("treats a cap of 0 as a cap and a raise without armor as none", () => {
+    expect(withDex(16, cap("maxDex.armor", 0, "Splint mail")).maxDex()).toBe(0);
+
+    const unarmored = withDex(16, c("maxDex.armor", 2, { label: "Mithral" }));
+    expect(unarmored.maxDex()).toBeUndefined();
+    expect(dexLine(unarmored).amount).toBe(3);
+    expect(unarmored.resolve("maxDex.armor").lines[0].reason).toBe(
+      "No armor max Dex to raise",
+    );
+  });
+
+  it("lets a Dex penalty through", () => {
+    const engine = withDex(6, cap("maxDex.armor", 1, "Full plate"));
+    expect(dexLine(engine).amount).toBe(-2);
+  });
+
+  it("doesn't cap Dex anywhere but AC", () => {
+    const engine = createStatEngine([
+      base("ability.dexterity", 18),
+      c("initiative", { from: "ability.dexterity", as: "modifier" }),
+      cap("maxDex.armor", 1, "Full plate"),
+    ]);
+    expect(engine.resolve("initiative").total).toBe(4);
   });
 });

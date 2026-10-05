@@ -24,7 +24,9 @@ export type StatKey =
   | `skill.${string}`
   | `speed.${SpeedMode}`
   | `resist.${EnergyType}`
-  | `uses.${string}`;
+  | `uses.${string}`
+  // A cap on the Dex bonus to AC, one per thing imposing it (armor, shield, load).
+  | `maxDex.${string}`;
 
 export type StatSelector =
   | StatKey
@@ -33,7 +35,8 @@ export type StatSelector =
   | "skill.*"
   | "attack.*"
   | "damage.*"
-  | "speed.*";
+  | "speed.*"
+  | "maxDex.*";
 
 // A target whose last segment is picked when the source is activated,
 // e.g. resist energy → { prefix: "resist", choice: "energy" } + choices.energy = "fire".
@@ -69,7 +72,8 @@ export type ScalingValue = {
 export type DerivedValue = {
   from: StatKey;
   as: "modifier" | "total";
-  max?: number; // armor max Dex bonus
+  // Caps the amount: a number, or "maxDex" for the lowest maxDex.* cap (Dex to AC).
+  max?: number | "maxDex";
 };
 
 export type EffectDef = {
@@ -114,6 +118,7 @@ export type StatLine = Contribution & {
   amount: number;
   status: "applied" | "suppressed" | "conditional";
   reason?: string; // why a suppressed line doesn't apply
+  uncapped?: number; // the amount before a max (e.g. armor max Dex) cut it down
 };
 
 export type ResolvedStat = {
