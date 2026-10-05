@@ -62,6 +62,68 @@ describe("stacking", () => {
   });
 });
 
+describe("set", () => {
+  const paralyzed = (target: "ability.dexterity" | "ability.*", value = 0) =>
+    c(target, value, { op: "set", label: "Paralyzed" });
+
+  it("overrides the base and every bonus and penalty", () => {
+    const engine = createStatEngine([
+      base("ability.strength", 18),
+      c("ability.strength", 4, { bonusType: "enhancement" }),
+      c("ability.strength", -2),
+      c("ability.strength", 0, { op: "set", label: "Paralyzed" }),
+    ]);
+    const str = engine.resolve("ability.strength");
+    expect(str.total).toBe(0);
+    expect(str.hasBase).toBe(true);
+    expect(
+      str.lines.filter((l) => l.reason === "Overridden by Paralyzed (Paralyzed)"),
+    ).toHaveLength(3);
+  });
+
+  it("applies the lowest of several sets", () => {
+    const engine = createStatEngine([
+      base("speed.land", 30),
+      c("speed.land", 10, { op: "set", label: "Slowed form" }),
+      c("speed.land", 0, { op: "set", label: "Held" }),
+    ]);
+    const speed = engine.resolve("speed.land");
+    expect(speed.total).toBe(0);
+    expect(speed.lines[1].reason).toBe("Doesn't stack with Held (Held)");
+  });
+
+  it("feeds derived stats: Dex 0 is a −5 modifier to AC", () => {
+    const engine = createStatEngine([
+      base("ac", 10),
+      base("ability.dexterity", 24),
+      dexToAc,
+      paralyzed("ability.dexterity"),
+    ]);
+    const ac = resolveArmorClass(engine);
+    expect(ac.total.total).toBe(5);
+    expect(ac.flatFooted.total).toBe(5);
+  });
+
+  it("doesn't give a nonability a score", () => {
+    const engine = createStatEngine([
+      base("ability.strength", 10),
+      paralyzed("ability.*"),
+    ]);
+    expect(engine.resolve("ability.strength").total).toBe(0);
+    const con = engine.resolve("ability.constitution");
+    expect(con.hasBase).toBe(false);
+    expect(con.lines[0].reason).toBe("No score to set");
+  });
+
+  it("only shows a conditional set", () => {
+    const engine = createStatEngine([
+      base("ability.dexterity", 14),
+      c("ability.dexterity", 0, { op: "set", condition: "while held" }),
+    ]);
+    expect(engine.resolve("ability.dexterity").total).toBe(14);
+  });
+});
+
 describe("armor class", () => {
   it("drops armor from touch AC and Dex from flat-footed", () => {
     const engine = createStatEngine([
