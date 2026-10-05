@@ -24,6 +24,7 @@ const mod = (ability: Ability): DerivedValue => ({
 export function characterContributions(
   character: ICharacter,
   skillCompendium: CompendiumSkill[],
+  synergyCompendium: CompendiumSkillSynergy[],
 ): Contribution[] {
   const out: Contribution[] = [];
   const push = (
@@ -93,6 +94,28 @@ export function characterContributions(
     push(`skill.${ref.id}`, "Ranks", ref.ranks, "untyped", "base");
     push(`skill.${ref.id}`, "Misc", ref.miscModifier);
     if (skill) push(`skill.${ref.id}`, camelToLabel(skill.ability), mod(skill.ability));
+  }
+
+  // 5 ranks in Bluff → +2 on Diplomacy. Synergies are untyped and each is its
+  // own source, so several to one skill stack.
+  for (const id of character.skillSynergyRefs) {
+    const synergy = synergyCompendium.find((s) => s.id === id);
+    if (!synergy) continue;
+    const from = character.skillRefs.find((r) => r.id === synergy.fromSkillId);
+    if (!from || from.ranks < synergy.ranksRequired) continue;
+    const fromName =
+      skillCompendium.find((s) => s.id === synergy.fromSkillId)?.name ??
+      "Unknown skill";
+    out.push({
+      target: `skill.${synergy.toSkillId}`,
+      op: "add",
+      bonusType: "untyped",
+      value: synergy.bonus,
+      label: `${fromName} synergy`,
+      sourceKey: `synergy:${synergy.id}`,
+      sourceLabel: `${synergy.ranksRequired} ranks in ${fromName}`,
+      condition: synergy.condition,
+    });
   }
 
   for (const ref of character.abilityRefs) {
