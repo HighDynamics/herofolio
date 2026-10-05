@@ -11,6 +11,7 @@
     "migrate:rollback": "tsx server/db/migrate.ts rollback",
     "seed": "tsx server/seed/seed.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p server",
+    "test": "vitest run",
     "mobile-url": "ifconfig | grep 192.168 | awk '{print \"http://\"$2\":3000\"}'",
     "build": "vite build",
     "serve": "vite preview",
@@ -64,6 +65,7 @@
     "tailwindcss": "^4.1.11",
     "typescript": "~5.9",
     "vite": "^7.0.6",
-    "vite-plugin-pwa": "^1.1.0"
+    "vite-plugin-pwa": "^1.1.0",
+    "vitest": "^5.0.3"
   }
 }
