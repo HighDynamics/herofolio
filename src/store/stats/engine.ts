@@ -56,6 +56,17 @@ function applyStacking(lines: StatLine[]) {
   }
 }
 
+// Speed bonuses (haste's +30 to every mode) only improve movement modes the
+// character already has; they never grant a fly or swim speed.
+function requireMovementMode(key: StatKey, lines: StatLine[]) {
+  if (!key.startsWith("speed.")) return;
+  const applied = lines.filter((l) => l.status === "applied");
+  if (applied.some((l) => l.op === "base" && l.amount > 0)) return;
+  for (const line of applied) {
+    suppress(line, `No ${key.slice("speed.".length)} speed`);
+  }
+}
+
 // A set overrides the stat's base and every bonus and penalty. It never gives
 // a creature an ability score it lacks (an undead's Con stays a nonability).
 function applySet(key: StatKey, lines: StatLine[]) {
@@ -110,6 +121,7 @@ export function createStatEngine(contributions: Contribution[]) {
         )
         .filter((line) => !opts.exclude?.(line));
 
+      requireMovementMode(key, lines);
       applyStacking(lines);
       applySet(key, lines);
 

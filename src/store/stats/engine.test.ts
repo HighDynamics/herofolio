@@ -124,6 +124,41 @@ describe("set", () => {
   });
 });
 
+describe("speed", () => {
+  const haste = c("speed.*", 30, { bonusType: "enhancement", label: "Haste" });
+
+  it("only improves movement modes the character has", () => {
+    const engine = createStatEngine([base("speed.land", 30), haste]);
+    expect(engine.resolve("speed.land").total).toBe(60);
+    const fly = engine.resolve("speed.fly");
+    expect(fly.total).toBe(0);
+    expect(fly.hasBase).toBe(false);
+    expect(fly.lines[0]).toMatchObject({
+      status: "suppressed",
+      reason: "No fly speed",
+    });
+  });
+
+  it("improves a mode another effect grants", () => {
+    const engine = createStatEngine([
+      base("speed.land", 30),
+      c("speed.fly", 60, { op: "base", label: "Fly" }),
+      haste,
+    ]);
+    expect(engine.resolve("speed.fly").total).toBe(90);
+  });
+
+  it("doesn't let a penalty or a set create a mode", () => {
+    const engine = createStatEngine([
+      c("speed.swim", -10),
+      c("speed.swim", 5, { op: "set" }),
+    ]);
+    const swim = engine.resolve("speed.swim");
+    expect(swim.total).toBe(0);
+    expect(swim.hasBase).toBe(false);
+  });
+});
+
 describe("armor class", () => {
   it("drops armor from touch AC and Dex from flat-footed", () => {
     const engine = createStatEngine([
