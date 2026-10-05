@@ -11,7 +11,13 @@ export function StatBreakdown(p: { stat: ResolvedStat }) {
             "flex flex-col w-1/2",
             line.status !== "applied" && "opacity-50",
           )}
-          title={line.reason ?? line.condition}
+          title={
+            line.reason ??
+            line.condition ??
+            (line.uncapped !== undefined
+              ? `Capped (${line.uncapped} without the cap)`
+              : undefined)
+          }
         >
           <span className="text-label text-sm">{line.label}</span>
           <span
