@@ -91,6 +91,13 @@ const failures = new Map<
   { count: number; lockedUntil: number; expires: number }
 >();
 
+// Render sits behind Cloudflare, and its proxy appends to X-Forwarded-For, so
+// in production req.ip is a Cloudflare edge address shared by many users.
+// Cloudflare sets True-Client-IP to the visitor and overwrites any forged one.
+function clientIp(req: Request) {
+  return (isProd && req.get("true-client-ip")) || req.ip || "unknown";
+}
+
 function isLockedOut(ip: string) {
   const rec = failures.get(ip);
   return !!rec && rec.lockedUntil > Date.now();
@@ -113,6 +120,8 @@ function registerFailure(ip: string) {
   }
   rec.expires = now + LOCK_MS;
   failures.set(ip, rec);
+  // Logged so production can confirm each visitor gets their own count.
+  console.warn(`Failed auth attempt from ${ip}${rec.lockedUntil > now ? " (locked out)" : ""}`);
 }
 
 const tooManyAttempts = { error: "Too many attempts. Try again in a few minutes." };
@@ -182,7 +191,7 @@ async function startSession(req: Request, userId: string) {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 export const signUp: RequestHandler = async (req, res) => {
-  if (isLockedOut(req.ip!)) {
+  if (isLockedOut(clientIp(req))) {
     res.status(429).json(tooManyAttempts);
     return;
   }
@@ -194,7 +203,7 @@ export const signUp: RequestHandler = async (req, res) => {
   const { email, password, inviteCode } = fields;
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
   if (!inviteCodeMatches(inviteCode)) {
-    registerFailure(req.ip!);
+    registerFailure(clientIp(req));
     res.status(403).json({ error: "That invite code isn't valid" });
     return;
   }
@@ -219,7 +228,7 @@ export const signUp: RequestHandler = async (req, res) => {
 };
 
 export const login: RequestHandler = async (req, res) => {
-  if (isLockedOut(req.ip!)) {
+  if (isLockedOut(clientIp(req))) {
     res.status(429).json(tooManyAttempts);
     return;
   }
@@ -231,7 +240,7 @@ export const login: RequestHandler = async (req, res) => {
   const user = await findByEmail(fields.email);
   const ok = await bcrypt.compare(fields.password, user?.passwordHash ?? DUMMY_HASH);
   if (!user?.passwordHash || !ok) {
-    registerFailure(req.ip!);
+    registerFailure(clientIp(req));
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
@@ -267,7 +276,7 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
 // device or stolen cookie can't take over the account. Signs out every other
 // session, since the password change may be in response to one of them.
 export const changePassword: RequestHandler = async (req, res) => {
-  if (isLockedOut(req.ip!)) {
+  if (isLockedOut(clientIp(req))) {
     res.status(429).json(tooManyAttempts);
     return;
   }
@@ -283,7 +292,7 @@ export const changePassword: RequestHandler = async (req, res) => {
   }
   const user: UserRow = await db("users").where({ id: req.userId }).first();
   if (!(await bcrypt.compare(currentPassword, user.passwordHash ?? DUMMY_HASH))) {
-    registerFailure(req.ip!);
+    registerFailure(clientIp(req));
     res.status(403).json({ error: "Current password is incorrect" });
     return;
   }
