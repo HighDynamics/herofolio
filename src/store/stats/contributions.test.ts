@@ -5,7 +5,11 @@ import {
   sourceContributions,
   type SourceEntry,
 } from "./contributions";
-import { createStatEngine, resolveArmorClass } from "./engine";
+import {
+  abilityModifierOf,
+  createStatEngine,
+  resolveArmorClass,
+} from "./engine";
 import { makeCharacter } from "./testing";
 
 const skill = (id: string, name: string, ability: Ability): CompendiumSkill => ({
@@ -187,5 +191,19 @@ describe("active sources on a character sheet", () => {
     expect(ac.total.total).toBe(19);
     expect(ac.touch.total).toBe(11);
     expect(engine.resolve("save.reflex").total).toBe(6);
+  });
+
+  it("treats a sheet score of 0 as a score, not a nonability", () => {
+    const dex0 = makeCharacter({
+      abilities: {
+        ...dex18.abilities,
+        score: { ...dex18.abilities.score, dexterity: 0 },
+      },
+    });
+    const engine = engineWith(dex0);
+    const dex = engine.resolve("ability.dexterity");
+    expect(dex).toMatchObject({ hasBase: true, total: 0 });
+    expect(abilityModifierOf(engine, "dexterity")).toBe(-5);
+    expect(resolveArmorClass(engine).total.total).toBe(5);
   });
 });

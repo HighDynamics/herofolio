@@ -47,7 +47,7 @@ export function Spells() {
 
     const modifier = abilityScores[castingAbility].modifier;
 
-    return modifier ? 10 + levelNum + modifier : "unknown";
+    return modifier !== null ? 10 + levelNum + modifier : "unknown";
   }
 
   function getRemainingSpells(level: number, characterClass: string) {
