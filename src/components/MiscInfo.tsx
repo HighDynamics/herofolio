@@ -1,3 +1,4 @@
+import { signed } from "../lib";
 import { useCharacter, useStat } from "../store/character";
 import { useDiceRoll } from "../store/ui";
 import { DiceRollButton } from "./DiceRollButton";
@@ -29,7 +30,7 @@ export function MiscInfo() {
             <div className="flex justify-between text-lg items-center">
               <span>Initiative</span>
               <div className="flex items-center gap-2">
-                <span className="tabular-nums">+{initiative}</span>
+                <span className="tabular-nums">{signed(initiative)}</span>
                 <DiceRollButton
                   onClick={() => roll20(initiative, "Initiative")}
                 />

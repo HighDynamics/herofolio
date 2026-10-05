@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { combine as c } from "../../lib";
+import { combine as c, signed } from "../../lib";
 import { useAddSkill, useUpdateCharacter, useUpdateSkill } from "../../store/api";
 import {
   useCharacter,
@@ -218,7 +218,7 @@ function SkillsListItem(p: {
                 (+{skill.synergies.conditionalBonus}?)
               </span>
             )}
-            <span className="font-mono">+{skillPoints}</span>
+            <span className="font-mono">{signed(skillPoints)}</span>
             <DiceRollButton
               className="flex size-8 items-center justify-center cursor-pointer"
               onClick={() => roll20(skillPoints, skill.name)}

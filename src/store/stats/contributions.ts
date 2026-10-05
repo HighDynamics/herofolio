@@ -33,8 +33,11 @@ export function characterContributions(
     value: number | DerivedValue,
     bonusType: BonusType = "untyped",
     op: Operation = "add",
+    keepZero = false,
   ) => {
-    if (value === 0) return;
+    // A 0 on the sheet means "nothing here" (no fly speed, no SR), except
+    // where 0 is a real value, like an ability score.
+    if (value === 0 && !keepZero) return;
     out.push({
       target,
       op,
@@ -50,7 +53,7 @@ export function characterContributions(
 
   for (const [ability, score] of Object.entries(abilities.score)) {
     if (score !== null) {
-      push(`ability.${ability as Ability}`, "Score", score, "untyped", "base");
+      push(`ability.${ability as Ability}`, "Score", score, "untyped", "base", true);
     }
   }
 
