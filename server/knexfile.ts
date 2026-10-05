@@ -51,7 +51,9 @@ const config: Knex.Config = {
   client: "pg",
   connection,
   searchPath: [schema],
-  pool: { min: 0, max: 10 },
+  // Small: the production database is shared, and its herofolio role is
+  // capped at 25 connections (see docs/deploy/create-herofolio-role.sql).
+  pool: { min: 0, max: 5 },
   migrations: { directory: path.resolve(dirname, "db/migrations") },
   // Write camelCase in queries; the database uses snake_case.
   wrapIdentifier: (value, origImpl) =>

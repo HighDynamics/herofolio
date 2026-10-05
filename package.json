@@ -7,6 +7,7 @@
     "start": "concurrently -k -n web,api -c magenta,cyan \"npm:start:web\" \"npm:start:server\"",
     "start:web": "vite --host",
     "start:server": "PORT=4002 tsx watch server/server.ts",
+    "start:prod": "tsx server/server.ts",
     "migrate": "tsx server/db/migrate.ts",
     "migrate:rollback": "tsx server/db/migrate.ts rollback",
     "seed": "tsx server/seed/seed.ts",

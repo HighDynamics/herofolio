@@ -12,8 +12,15 @@ try {
     );
   } else {
     // knex places its tables in the schema via searchPath but won't create the
-    // schema itself, so make sure it exists first.
-    await db.raw("create schema if not exists ??", [schema]);
+    // schema itself, so make sure it exists first. Check before creating:
+    // Postgres checks the database-level CREATE privilege even for
+    // "create schema if not exists", and the production role doesn't have it
+    // (its schema is created for it; see docs/deploy/RUNBOOK.md).
+    const { rows } = await db.raw(
+      "select 1 from pg_namespace where nspname = ?",
+      [schema],
+    );
+    if (!rows.length) await db.raw("create schema ??", [schema]);
     const [batch, applied] = await db.migrate.latest();
     console.log(
       applied.length
