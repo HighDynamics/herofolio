@@ -17,9 +17,14 @@ export function matches(selector: StatSelector, key: StatKey) {
 
 const describe = (line: StatLine) => `${line.label} (${line.sourceLabel})`;
 
+function suppress(line: StatLine, reason: string) {
+  line.status = "suppressed";
+  line.reason = reason;
+}
+
 // Lines in the same group don't stack; only one of them applies.
 function stackingGroup(line: StatLine): string {
-  if (line.op === "base") return "base";
+  if (line.op === "base" || line.op === "set") return line.op;
   // Penalties stack regardless of type, except with the same source.
   if (line.amount < 0) return `penalty|${line.sourceKey}`;
   const type = line.enhances
@@ -39,15 +44,30 @@ function applyStacking(lines: StatLine[]) {
   }
 
   for (const [key, group] of groups) {
-    // Worst penalty wins within a penalty group; otherwise the highest value.
+    // The worst penalty and the lowest set win; otherwise the highest value.
     const strength = (l: StatLine) =>
-      key.startsWith("penalty|") ? -l.amount : l.amount;
+      key === "set" || key.startsWith("penalty|") ? -l.amount : l.amount;
     const winner = group.reduce((a, b) => (strength(b) > strength(a) ? b : a));
     for (const line of group) {
-      if (line === winner) continue;
-      line.status = "suppressed";
-      line.reason = `Doesn't stack with ${describe(winner)}`;
+      if (line !== winner) {
+        suppress(line, `Doesn't stack with ${describe(winner)}`);
+      }
     }
+  }
+}
+
+// A set overrides the stat's base and every bonus and penalty. It never gives
+// a creature an ability score it lacks (an undead's Con stays a nonability).
+function applySet(key: StatKey, lines: StatLine[]) {
+  const applied = lines.filter((l) => l.status === "applied");
+  const set = applied.find((l) => l.op === "set");
+  if (!set) return;
+  if (key.startsWith("ability.") && !applied.some((l) => l.op === "base")) {
+    suppress(set, "No score to set");
+    return;
+  }
+  for (const line of applied) {
+    if (line !== set) suppress(line, `Overridden by ${describe(set)}`);
   }
 }
 
@@ -91,8 +111,10 @@ export function createStatEngine(contributions: Contribution[]) {
         .filter((line) => !opts.exclude?.(line));
 
       applyStacking(lines);
+      applySet(key, lines);
 
       const applied = lines.filter((l) => l.status === "applied");
+      const set = applied.find((l) => l.op === "set");
       const base = applied.find((l) => l.op === "base");
       const bonus = applied
         .filter((l) => l.op === "add")
@@ -100,8 +122,8 @@ export function createStatEngine(contributions: Contribution[]) {
 
       const result: ResolvedStat = {
         key,
-        hasBase: !!base,
-        total: (base?.amount ?? 0) + bonus,
+        hasBase: !!(set ?? base),
+        total: set ? set.amount : (base?.amount ?? 0) + bonus,
         lines,
       };
       if (cacheable) cache.set(key, result);

@@ -47,7 +47,9 @@ export type ChoiceTarget = {
 // add:  a typed bonus or penalty, subject to stacking rules.
 // base: a candidate for the stat's starting value — highest wins
 //       (racial land speed vs. fly spell, racial SR vs. spell resistance, temp HP).
-export type Operation = "add" | "base";
+// set:  fixes the stat at this value, overriding its base and every bonus and
+//       penalty (paralysis → Str and Dex 0). With several, the lowest wins.
+export type Operation = "add" | "base" | "set";
 
 // Enhancement bonuses to AC always improve a specific kind of AC bonus.
 export type EnhanceableAc = "armor" | "shield" | "naturalArmor";
