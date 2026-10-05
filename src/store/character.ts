@@ -55,6 +55,7 @@ const buildStatEngine = memoizeLast(
   (
     character: ICharacter,
     skills: CompendiumSkill[],
+    skillSynergies: CompendiumSkillSynergy[],
     items: IItem[],
     spells: ISpell[],
     abilities: CompendiumAbility[],
@@ -78,7 +79,7 @@ const buildStatEngine = memoizeLast(
     };
 
     return createStatEngine([
-      ...characterContributions(character, skills),
+      ...characterContributions(character, skills, skillSynergies),
       ...sourceContributions(character, character.activeSources ?? [], lookup),
     ]);
   },
@@ -88,6 +89,7 @@ export function useStatEngine() {
   return buildStatEngine(
     useCharacter(),
     useSuspenseQuery(queries.skills).data,
+    useSuspenseQuery(queries.skillSynergies).data,
     useSuspenseQuery(queries.items).data,
     useSuspenseQuery(queries.spells).data,
     useSuspenseQuery(queries.abilities).data,
@@ -162,7 +164,6 @@ export type EnrichedSkill = CharacterSkill & {
   total: number;
   synergies: {
     conditionalBonus: number;
-    unconditionalBonus: number;
     synergiesList: EnrichedSkillSynergy[];
   };
 };
@@ -210,27 +211,15 @@ export function useCharacterSkills() {
         })
         .filter(Boolean) as EnrichedSkillSynergy[];
 
-      let conditionalBonus = 0;
-      let unconditionalBonus = 0;
-
-      synergies
-        .filter((synergy) => synergy.active)
-        .forEach((synergy) => {
-          if (synergy.condition) {
-            conditionalBonus += synergy.bonus;
-          } else {
-            unconditionalBonus += synergy.bonus;
-          }
-        });
+      // Unconditional synergies are already in the engine's total.
+      const conditionalBonus = synergies
+        .filter((synergy) => synergy.active && synergy.condition)
+        .reduce((sum, synergy) => sum + synergy.bonus, 0);
 
       return {
         ...skill,
         total: engine.resolve(`skill.${skill.id}`).total,
-        synergies: {
-          conditionalBonus,
-          unconditionalBonus,
-          synergiesList: synergies,
-        },
+        synergies: { conditionalBonus, synergiesList: synergies },
       };
     });
   }, [skills, skillSynergies, skillRefs, skillSynergyRefs, engine]);
