@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { characterContributions } from "./contributions";
-import { createStatEngine } from "./engine";
+import {
+  characterContributions,
+  sourceContributions,
+  type SourceEntry,
+} from "./contributions";
+import { createStatEngine, resolveArmorClass } from "./engine";
 import { makeCharacter } from "./testing";
 
 const skill = (id: string, name: string, ability: Ability): CompendiumSkill => ({
@@ -108,5 +112,80 @@ describe("skill synergies", () => {
       }),
     );
     expect(engine.resolve("skill.diplomacy").total).toBe(1);
+  });
+});
+
+describe("active sources on a character sheet", () => {
+  const entries: Record<string, SourceEntry> = {
+    paralyzed: {
+      label: "Paralyzed",
+      effects: [
+        { target: "ability.strength", op: "set", bonusType: "untyped", value: 0 },
+        { target: "ability.dexterity", op: "set", bonusType: "untyped", value: 0 },
+      ],
+    },
+    haste: {
+      label: "Haste",
+      effects: [{ target: "speed.*", bonusType: "enhancement", value: 30 }],
+    },
+    fullPlate: {
+      label: "Full plate",
+      effects: [
+        { target: "ac", bonusType: "armor", value: 8 },
+        { target: "maxDex.armor", op: "base", bonusType: "untyped", value: 1 },
+      ],
+    },
+  };
+
+  function engineWith(character: ICharacter, ...ids: string[]) {
+    return createStatEngine([
+      ...characterContributions(character, skills, synergies),
+      ...sourceContributions(
+        character,
+        ids.map((id) => ({ instanceId: id, ref: { kind: "item", id } })),
+        (ref) => entries[ref.id],
+      ),
+    ]);
+  }
+
+  const dex18 = makeCharacter({
+    abilities: {
+      score: {
+        strength: 16,
+        dexterity: 18,
+        constitution: 10,
+        intelligence: 10,
+        wisdom: 10,
+        charisma: 10,
+      },
+      primary: "dexterity",
+    },
+    saves: {
+      fortitude: { base: 2, magic: 0, misc: 0, ability: "constitution" },
+      reflex: { base: 2, magic: 0, misc: 0, ability: "dexterity" },
+      will: { base: 0, magic: 0, misc: 0, ability: "wisdom" },
+    },
+  });
+
+  it("paralysis sets Str and Dex to 0, and Dex-based stats follow", () => {
+    const engine = engineWith(dex18, "paralyzed");
+    expect(engine.resolve("ability.strength").total).toBe(0);
+    expect(resolveArmorClass(engine).total.total).toBe(5);
+    expect(engine.resolve("initiative").total).toBe(-5);
+    expect(engine.resolve("save.reflex").total).toBe(-3);
+  });
+
+  it("haste raises land speed only", () => {
+    const engine = engineWith(dex18, "haste");
+    expect(engine.resolve("speed.land").total).toBe(60);
+    expect(engine.resolve("speed.fly").total).toBe(0);
+  });
+
+  it("full plate caps Dex to AC but not Reflex", () => {
+    const engine = engineWith(dex18, "fullPlate");
+    const ac = resolveArmorClass(engine);
+    expect(ac.total.total).toBe(19);
+    expect(ac.touch.total).toBe(11);
+    expect(engine.resolve("save.reflex").total).toBe(6);
   });
 });
