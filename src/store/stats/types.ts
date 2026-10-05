@@ -111,7 +111,7 @@ export type Contribution = {
 export type StatLine = Contribution & {
   amount: number;
   status: "applied" | "suppressed" | "conditional";
-  suppressedBy?: string;
+  reason?: string; // why a suppressed line doesn't apply
 };
 
 export type ResolvedStat = {

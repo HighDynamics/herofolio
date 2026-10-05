@@ -11,11 +11,7 @@ export function StatBreakdown(p: { stat: ResolvedStat }) {
             "flex flex-col w-1/2",
             line.status !== "applied" && "opacity-50",
           )}
-          title={
-            line.suppressedBy
-              ? `Doesn't stack with ${line.suppressedBy}`
-              : line.condition
-          }
+          title={line.reason ?? line.condition}
         >
           <span className="text-label text-sm">{line.label}</span>
           <span

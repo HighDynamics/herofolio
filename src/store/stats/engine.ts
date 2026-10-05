@@ -15,6 +15,8 @@ export function matches(selector: StatSelector, key: StatKey) {
   return selector.endsWith(".*") && key.startsWith(selector.slice(0, -1));
 }
 
+const describe = (line: StatLine) => `${line.label} (${line.sourceLabel})`;
+
 // Lines in the same group don't stack; only one of them applies.
 function stackingGroup(line: StatLine): string {
   if (line.op === "base") return "base";
@@ -44,7 +46,7 @@ function applyStacking(lines: StatLine[]) {
     for (const line of group) {
       if (line === winner) continue;
       line.status = "suppressed";
-      line.suppressedBy = `${winner.label} (${winner.sourceLabel})`;
+      line.reason = `Doesn't stack with ${describe(winner)}`;
     }
   }
 }
