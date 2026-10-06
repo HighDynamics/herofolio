@@ -23,30 +23,22 @@ recreated. The plan puts that data first. The exact production steps are in
 
 ## Shape
 
-- **API**: a Render web service (`herofolio-api`) running
-  `tsx server/server.ts` with `NODE_ENV=production`.
-- **Frontend**: a Render static site (`herofolio`) built with `vite build`. It
-  rewrites `/api/*` to the API's public URL and everything else to
-  `/index.html`.
-- Because the static site proxies `/api`, the browser only ever talks to one
-  origin. Cookies stay first-party and `SameSite=Lax` works as it does in
-  development, so the API needs **no CORS** and no `SameSite=None` cookie.
-  (onrender.com is on the Public Suffix List, so a cross-origin setup would
-  have needed both.)
+One Render web service, `herofolio`, runs `tsx server/server.ts` with
+`NODE_ENV=production`. Express serves the API under `/api` and the Vite build
+(`build/`) everywhere else, with an SPA fallback to `index.html` for
+client-side routes. Daniel chose this over a static site plus an API service
+because:
 
-### Alternative: one web service serving both
+- the browser sees one origin, so there's no proxy hop, no CORS, and the
+  `SameSite=Lax`, `Secure` session cookie works as it does in development;
+- the client IP reaches the API through one known proxy chain (Cloudflare,
+  then Render), not through a static-site rewrite whose forwarding isn't
+  documented;
+- there's one deploy, so the frontend and API can't drift apart. Cost is the
+  same.
 
-One web service that also serves `build/` would be simpler and costs the
-same (static sites are free; it's one web service either way):
-
-- one origin with no proxy hop, so the client IP and `Secure` cookies work
-  without depending on how Render's rewrite proxy forwards headers;
-- one deploy instead of two, so the frontend and API can't drift apart;
-- but there's no CDN for the assets, and a frontend-only change restarts the
-  API.
-
-I've built the split plan as chosen, but flagged it. The client-IP check in
-the runbook decides whether the split works as-is (see "Client IP" below).
+It gives up a CDN for the assets (they're fingerprinted and cached for a year
+instead), and a frontend-only change restarts the API.
 
 ## Database safety
 
@@ -93,27 +85,48 @@ the runbook decides whether the split works as-is (see "Client IP" below).
 - `server/server.ts`:
   - Startup check: before listening, ask Knex for pending migrations (and let
     it validate the list). If any are pending, log which ones and exit 1.
-  - `GET /api/health` before the session middleware (no DB or session work)
-    for Render's health check.
-  - Trust proxy stays at 1 hop, so `req.secure` is true behind Render and the
-    `Secure` session cookie is sent.
-- Client IP for the login rate limit: Render runs behind Cloudflare and its
-  proxy appends to `X-Forwarded-For`, so with `trust proxy 1`, `req.ip` is a
-  Cloudflare edge address and many users would share one rate-limit bucket.
-  In production, use the `True-Client-IP` header (which Cloudflare sets and
-  overwrites), falling back to `req.ip`. Failed sign-ins log the IP they
-  counted against, so the runbook can check that two networks get different
-  IPs through the static-site proxy.
-- `render.yaml`: both services, env vars by name only (`sync: false`).
+  - `GET /api/health` ahead of the session store (no DB or session work) for
+    Render's health check.
+  - In production, serve `build/`: `assets/` with a one-year immutable cache,
+    other files with revalidation (so `sw.js` and `index.html` update), and
+    `index.html` for any other extension-less GET. Missing files (anything
+    under `/assets` or with an extension) return 404, and so do unknown `/api`
+    paths (as JSON), rather than the app.
+  - The JSON body parser and session middleware are now scoped to `/api`, so
+    static files never hit the session store.
+  - Helmet's CSP now covers the page, so it allows the Font Awesome kit
+    (`script-src kit.fontawesome.com`, `connect-src ka-f/ka-p.fontawesome.com`).
+    Google Fonts already fit helmet's `https:` style and font defaults.
+- Client IP and trust proxy. Render's docs only say traffic "passes through
+  Cloudflare and Render's load balancers" and to "read the x-forwarded-for
+  header". They give no hop count and don't mention `True-Client-IP`. Reports
+  from Render users show `X-Forwarded-For: <client>, <Cloudflare edge>`
+  arriving from a Render-internal 10.x address, with Render's proxy appending
+  rather than replacing. So:
+  - `trust proxy` is **2** (Render's proxy plus Cloudflare). That makes
+    `req.ip` the visitor, ignores anything a client puts at the front of
+    `X-Forwarded-For`, and makes `req.secure` true so the `Secure` cookie is
+    sent. With the old value of 1, `req.ip` was the Cloudflare edge, which
+    many visitors share.
+  - The login rate limiter keys on `CF-Connecting-IP`, which Cloudflare sets
+    on every request and overwrites if a client sends one. If it's ever
+    missing, it falls back to `req.ip`, so visitors never collapse into one
+    bucket.
+  - Failed sign-ins log both values (`Failed auth attempt from <key> (req.ip
+    <ip>)`). The runbook's verify step checks they match the real client and
+    can't be spoofed.
+- `render.yaml`: the one web service, env vars by name only (`sync: false`).
 - `.env.example`: note the production-only settings.
 - `package.json`: a `start:prod` script (`tsx server/server.ts`).
 
-The repo has no test suite, so instead of adding one the checks run against a
+The repo has no test suite, so instead of adding one the checks ran against a
 scratch local Postgres 18 cluster that mimics Render: a non-superuser
-`CREATEROLE` admin, an `ethics_reports` schema it owns, and the runbook's role
-SQL run verbatim. Then `npm run migrate`, the startup check (pending versus up
-to date), and the access checks run against it. After that, `npm run
-typecheck` and `npm run build`.
+`CREATEROLE` admin, plus an `ethics_reports` schema it owns. The runbook's
+role SQL ran exactly as written. Then: the startup refusal, `npm run migrate`,
+`npm run seed`, the verify SQL, the production server (pages, SPA fallback,
+caching, CSP, the `Secure` cookie, the rate limit by header and by
+`X-Forwarded-For`), and the rollback. After that, `npm run typecheck` and
+`npm run build`.
 
 ## Migrations on deploy
 

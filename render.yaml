@@ -5,15 +5,17 @@
 # (Render prompts for them when the Blueprint is first created). Never commit
 # their values.
 services:
-  # The Express API. The static site below proxies /api/* to it, so the browser
-  # sees one origin: no CORS, and the session cookie stays first-party.
+  # One web service: Express serves the API under /api and the built frontend
+  # (build/) everywhere else, so the browser sees a single origin.
   - type: web
-    name: herofolio-api
+    name: herofolio
     runtime: node
     region: oregon # same region as the "Dinos and Donuts" database
     plan: free
     branch: main
-    buildCommand: npm ci
+    # NODE_ENV=production would skip devDependencies, and the Vite build needs
+    # them.
+    buildCommand: npm ci --include=dev && npm run build
     # Free instances can't use preDeployCommand, so migrations run at start,
     # as ethics-reports does. On a paid plan, move `npm run migrate` to
     # preDeployCommand. The server also refuses to start if any are pending.
@@ -39,33 +41,3 @@ services:
         sync: false
       - key: BOOTSTRAP_USER_PASSWORD_HASH
         sync: false
-
-  # The frontend. Render serves existing files first, then applies these rules.
-  - type: web
-    name: herofolio
-    runtime: static
-    branch: main
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./build
-    envVars:
-      - key: NODE_VERSION
-        value: "24"
-    routes:
-      # Must stay above the SPA fallback. Update the host if the API service
-      # gets a different onrender.com URL.
-      - type: rewrite
-        source: /api/*
-        destination: https://herofolio-api.onrender.com/api/*
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
