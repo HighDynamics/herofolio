@@ -53,8 +53,8 @@ that.
    holds donor names and addresses, so keep it out of every git repo:
 
    ```zsh
-   mkdir -p ~/Backups/dinos-and-donuts && chmod 700 ~/Backups/dinos-and-donuts
-   DUMP=~/Backups/dinos-and-donuts/ethics_reports-$(date +%Y%m%d-%H%M).dump
+   mkdir -p "$HOME/Backups/dinos-and-donuts" && chmod 700 "$HOME/Backups/dinos-and-donuts"
+   DUMP="$HOME/Backups/dinos-and-donuts/ethics_reports-$(date +%Y%m%d-%H%M).dump"
    psql "$PGURL" -X -f docs/deploy/ethics-reports-row-counts.sql > "$DUMP.before-counts.txt"
    pg_dump "$PGURL" --schema=ethics_reports --format=custom --file="$DUMP"
    chmod 600 "$DUMP" "$DUMP.before-counts.txt"
@@ -249,7 +249,7 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
      export and check it's the right file:
 
      ```zsh
-     DUMP=~/Backups/dinos-and-donuts/ethics_reports-YYYYMMDD-HHMM.dump   # the step 1 export
+     DUMP="$HOME/Backups/dinos-and-donuts/ethics_reports-YYYYMMDD-HHMM.dump"   # the step 1 export
      ls -l "$DUMP" && pg_restore --list "$DUMP" | grep -c "TABLE DATA"  # expect 12
      ```
 
@@ -257,9 +257,12 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
      whatever is there now can still be recovered:
 
      ```zsh
-     pg_dump "$PGURL" --schema=ethics_reports --format=custom \
-       --file=~/Backups/dinos-and-donuts/ethics_reports-pre-restore-$(date +%Y%m%d-%H%M).dump
+     PREDUMP="$HOME/Backups/dinos-and-donuts/ethics_reports-pre-restore-$(date +%Y%m%d-%H%M).dump"
+     pg_dump "$PGURL" --schema=ethics_reports --format=custom --file="$PREDUMP"
+     chmod 600 "$PREDUMP" && pg_restore --list "$PREDUMP" | grep -c "TABLE DATA"
      ```
+
+     If this dump fails, stop: don't restore over production without it.
 
   4. **[Daniel · terminal]** Restore `$DUMP` into a scratch local database (as
      in step 1.2) and inspect it.
