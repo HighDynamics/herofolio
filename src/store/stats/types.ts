@@ -51,7 +51,8 @@ export type ChoiceTarget = {
 // base: a candidate for the stat's starting value — highest wins
 //       (racial land speed vs. fly spell, racial SR vs. spell resistance, temp HP).
 // set:  fixes the stat at this value, overriding its base and every bonus and
-//       penalty (paralysis → Str and Dex 0). With several, the lowest wins.
+//       penalty (paralysis → Str and Dex 0). With several, the most recently
+//       activated wins and the stat reports the collision.
 export type Operation = "add" | "base" | "set";
 
 // Enhancement bonuses to AC always improve a specific kind of AC bonus.
@@ -126,4 +127,7 @@ export type ResolvedStat = {
   hasBase: boolean; // false for e.g. a null Con score
   total: number;
   lines: StatLine[];
+  // Two or more sets with different values: the most recently activated won,
+  // and the user should know the others were replaced.
+  setCollision?: { winner: StatLine; others: StatLine[] };
 };

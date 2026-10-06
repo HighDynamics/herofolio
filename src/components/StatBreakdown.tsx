@@ -2,8 +2,18 @@ import { combine as c } from "../lib";
 import type { ResolvedStat } from "../store/stats/types";
 
 export function StatBreakdown(p: { stat: ResolvedStat }) {
+  const collision = p.stat.setCollision;
   return (
     <div className="flex justify-between flex-wrap gap-y-4">
+      {collision && (
+        <div className="w-full text-sm text-amber-400">
+          {collision.winner.sourceLabel} sets this to {collision.winner.amount},
+          replacing{" "}
+          {collision.others
+            .map((l) => `${l.sourceLabel} (${l.amount})`)
+            .join(", ")}
+        </div>
+      )}
       {p.stat.lines.map((line, i) => (
         <div
           key={i}

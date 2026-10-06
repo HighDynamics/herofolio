@@ -24,7 +24,7 @@ function suppress(line: StatLine, reason: string) {
 
 // Lines in the same group don't stack; only one of them applies.
 function stackingGroup(line: StatLine): string {
-  if (line.op === "base" || line.op === "set") return line.op;
+  if (line.op === "base") return "base";
   // Penalties stack regardless of type, except with the same source.
   if (line.amount < 0) return `penalty|${line.sourceKey}`;
   const type = line.enhances
@@ -38,15 +38,15 @@ function stackingGroup(line: StatLine): string {
 function applyStacking(lines: StatLine[]) {
   const groups = new Map<string, StatLine[]>();
   for (const line of lines) {
-    if (line.status !== "applied") continue;
+    if (line.status !== "applied" || line.op === "set") continue;
     const key = stackingGroup(line);
     groups.set(key, [...(groups.get(key) ?? []), line]);
   }
 
   for (const [key, group] of groups) {
-    // The worst penalty and the lowest set win; otherwise the highest value.
+    // The worst penalty wins within a penalty group; otherwise the highest value.
     const strength = (l: StatLine) =>
-      key === "set" || key.startsWith("penalty|") ? -l.amount : l.amount;
+      key.startsWith("penalty|") ? -l.amount : l.amount;
     const winner = group.reduce((a, b) => (strength(b) > strength(a) ? b : a));
     for (const line of group) {
       if (line !== winner) {
@@ -75,17 +75,44 @@ function requireBase(key: StatKey, lines: StatLine[]) {
 
 // A set overrides the stat's base and every bonus and penalty. It never gives
 // a creature an ability score it lacks (an undead's Con stays a nonability).
-function applySet(key: StatKey, lines: StatLine[]) {
+// With several sets, the last one wins: contributions come in activeSources
+// order, which is activation order, and in effect order within a source. Sets
+// from other sources with different values are reported as a collision for
+// the user to sort out; one source's own sets are its author's call.
+function applySet(
+  key: StatKey,
+  lines: StatLine[],
+): ResolvedStat["setCollision"] {
   const applied = lines.filter((l) => l.status === "applied");
-  const set = applied.find((l) => l.op === "set");
+  const sets = applied.filter((l) => l.op === "set");
+  const set = sets.at(-1);
   if (!set) return;
   if (key.startsWith("ability.") && !applied.some((l) => l.op === "base")) {
-    suppress(set, "No score to set");
+    for (const line of sets) suppress(line, "No score to set");
     return;
   }
   for (const line of applied) {
-    if (line !== set) suppress(line, `Overridden by ${describe(set)}`);
+    if (line === set) continue;
+    suppress(
+      line,
+      line.op !== "set"
+        ? `Overridden by ${describe(set)}`
+        : line.sourceKey === set.sourceKey
+          ? `Replaced by ${describe(set)}, listed later`
+          : `Replaced by ${describe(set)}, activated later`,
+    );
   }
+  // A conditional bonus can't apply while the stat is set, but a conditional
+  // set still could.
+  for (const line of lines) {
+    if (line.status === "conditional" && line.op !== "set") {
+      suppress(line, `Overridden by ${describe(set)}`);
+    }
+  }
+  const others = sets.filter(
+    (l) => l.sourceKey !== set.sourceKey && l.amount !== set.amount,
+  );
+  return others.length ? { winner: set, others } : undefined;
 }
 
 export type ResolveOptions = {
@@ -147,7 +174,7 @@ export function createStatEngine(contributions: Contribution[]) {
 
       requireBase(key, lines);
       applyStacking(lines);
-      applySet(key, lines);
+      const setCollision = applySet(key, lines);
 
       const applied = lines.filter((l) => l.status === "applied");
       const set = applied.find((l) => l.op === "set");
@@ -161,6 +188,7 @@ export function createStatEngine(contributions: Contribution[]) {
         hasBase: !!(set ?? base),
         total: set ? set.amount : (base?.amount ?? 0) + bonus,
         lines,
+        ...(setCollision && { setCollision }),
       };
       if (cacheable) cache.set(key, result);
       return result;

@@ -17,8 +17,9 @@ paralysis Str) to 0.
 - **Bonuses**: a set overrides everything else on the stat — base, bonuses and
   penalties. They stay in the breakdown, marked as overridden. Paralyzed with
   bull's strength is still Str 0, matching the SRD's "effective score of 0".
-- **Several sets**: the lowest wins. Sets model restrictive conditions
-  (paralysis, helpless, held in place), so the most restrictive one applies.
+- **Several sets** (Daniel's call): the most recently activated source wins,
+  and sets with different values are reported as a collision on the stat so
+  the user knows. Which should win is case by case.
 - **Derived stats** read the set value: Dex 0 gives a −5 modifier to AC,
   initiative, Reflex and Dex skills, as the SRD says for helpless defenders.
 - **Nonabilities**: a set never gives a creature an ability score it doesn't
