@@ -126,4 +126,4 @@ useDeactivateSource()(instanceId);
 
 - **UI**: list `activeSources` with their lines; activate buttons on item/spell/ability panels; a "custom effect" form.
 - **Authoring**: add `effects` to compendium entries; move sheet values (armor, cloak "magic" saves) into items/sources as they're modeled.
-- **Sheet max Dex**: the sheet has no armor max Dex field, so caps only come from item effects or custom sources for now (awaiting Daniel's decision).
+- **Max Dex from armor**: armor items supply max Dex (`maxDex.armor`/`maxDex.shield` effects) once armor is modeled as items; the sheet has no max Dex field.
