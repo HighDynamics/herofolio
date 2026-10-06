@@ -12,6 +12,7 @@ spell or item stacks correctly against what's already on the sheet.
 | `src/store/stats/types.ts` | Stat keys, `EffectDef` (authoring), `ActiveSource` (character), `Contribution`/`ResolvedStat` (engine) |
 | `src/store/stats/engine.ts` | `createStatEngine(contributions)` → `resolve(key)` (`{ total, hasBase, lines }`) and `maxDex()`; stacking, set, max Dex; `resolveArmorClass` |
 | `src/store/stats/contributions.ts` | `characterContributions` (stored sheet values and skill synergies → contributions), `sourceContributions` (active sources → contributions) |
+| `src/store/stats/activeSources.ts` | `activateSource`/`deactivateSource`: keep `activeSources` in activation order (never sort or dedupe it) |
 | `src/store/character.ts` | `useStatEngine` (one memoized engine per version of the data); hooks `useStat`, `useArmorClass`, `useActiveSources`, `useActivateSource`, `useDeactivateSource` |
 | `src/components/StatBreakdown.tsx` | Renders a stat's lines (applied / suppressed / conditional); a suppressed line's `reason` is its tooltip |
 | `src/store/stats/*.test.ts` | Vitest tests for the engine and contributions (`npm test`) |
@@ -48,7 +49,10 @@ Effects may target wildcards: `ability.*`, `save.*`, `skill.*`, `attack.*`, `dam
 - **Derived**: `{ from: "ability.dexterity", as: "modifier", max? }` — Dex to AC/initiative/Reflex, ability to skills. `max` is a number or `"maxDex"`.
 - **op "set"**: fixes the stat at a value (paralyzed → Str and Dex 0).
   - It overrides the base and every bonus and penalty; they stay in the breakdown as "Overridden by …". Paralyzed with bull's strength is still Str 0, as the SRD's "effective score of 0" says.
-  - With several sets, the **lowest wins** (sets model restrictive conditions, so the most restrictive applies). *Pending Daniel's confirmation.*
+  - With several sets, the **most recently activated wins**; the others show "Replaced by …, activated later". Activation order is `character.activeSources` order: `activateSource` appends and `deactivateSource` filters (`src/store/stats/activeSources.ts`, used by the hooks), so the array is already in activation order (no timestamp needed). Sheet values come before every source.
+  - Within one source, the effect listed last wins ("Replaced by …, listed later") and it's not a collision: that's the author's call.
+  - Conditional bonuses can't apply while a set does, so they're suppressed too. A conditional set stays conditional.
+  - Sets from **different sources** with **different values** are a collision: the stat's `setCollision` (`{ winner, others }`, as lines) names the competing sources, and the breakdown shows "X sets this to 0, replacing Y (3)". Which should win is case by case, so the user decides, e.g. by deactivating one. Sets with the same value (paralyzed and helpless both Dex 0) aren't a collision.
   - Derived stats read the set value: Dex 0 is a −5 modifier to AC, initiative, Reflex and Dex skills (SRD: helpless defenders). Flat-footed AC keeps the −5.
   - A set never gives a nonability a score: an undead's Con stays none even under an `ability.*` set.
   - A set with a `condition` is shown, never applied.

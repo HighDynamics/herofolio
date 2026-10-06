@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { activateSource, deactivateSource } from "./activeSources";
 import {
   characterContributions,
   sourceContributions,
@@ -128,6 +129,12 @@ describe("active sources on a character sheet", () => {
         { target: "ability.dexterity", op: "set", bonusType: "untyped", value: 0 },
       ],
     },
+    cursedDex: {
+      label: "Curse of clumsiness",
+      effects: [
+        { target: "ability.dexterity", op: "set", bonusType: "untyped", value: 3 },
+      ],
+    },
     haste: {
       label: "Haste",
       effects: [{ target: "speed.*", bonusType: "enhancement", value: 30 }],
@@ -177,6 +184,43 @@ describe("active sources on a character sheet", () => {
     expect(resolveArmorClass(engine).total.total).toBe(5);
     expect(engine.resolve("initiative").total).toBe(-5);
     expect(engine.resolve("save.reflex").total).toBe(-3);
+  });
+
+  it("lets the most recently activated set win, in activeSources order", () => {
+    const paralyzedLast = engineWith(dex18, "cursedDex", "paralyzed");
+    expect(paralyzedLast.resolve("ability.dexterity").total).toBe(0);
+
+    const cursedLast = engineWith(dex18, "paralyzed", "cursedDex");
+    const dex = cursedLast.resolve("ability.dexterity");
+    expect(dex.total).toBe(3);
+    expect(dex.setCollision?.winner.sourceLabel).toBe("Curse of clumsiness");
+    expect(dex.setCollision?.others[0].sourceLabel).toBe("Paralyzed");
+  });
+
+  it("lets the latest activation win through activate and deactivate", () => {
+    const item = (id: string) => ({ ref: { kind: "item" as const, id } });
+    const dexOf = (character: ICharacter) =>
+      createStatEngine([
+        ...characterContributions(character, skills, synergies),
+        ...sourceContributions(
+          character,
+          character.activeSources,
+          (ref) => entries[ref.id],
+        ),
+      ]).resolve("ability.dexterity").total;
+
+    let character = activateSource(dex18, item("paralyzed"), "first");
+    character = activateSource(character, item("cursedDex"), "second");
+    expect(dexOf(character)).toBe(3);
+
+    // Reactivating paralysis makes it the latest, so it wins now.
+    character = deactivateSource(character, "first");
+    character = activateSource(character, item("paralyzed"), "third");
+    expect(character.activeSources.map((s) => s.instanceId)).toEqual([
+      "second",
+      "third",
+    ]);
+    expect(dexOf(character)).toBe(0);
   });
 
   it("haste raises land speed only", () => {

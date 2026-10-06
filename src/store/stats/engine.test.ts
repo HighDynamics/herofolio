@@ -83,15 +83,71 @@ describe("set", () => {
     ).toHaveLength(3);
   });
 
-  it("applies the lowest of several sets", () => {
+  it("applies the most recently activated set and reports the collision", () => {
     const engine = createStatEngine([
       base("speed.land", 30),
-      c("speed.land", 10, { op: "set", label: "Slowed form" }),
       c("speed.land", 0, { op: "set", label: "Held" }),
+      c("speed.land", 10, { op: "set", label: "Slowed form" }),
     ]);
     const speed = engine.resolve("speed.land");
-    expect(speed.total).toBe(0);
-    expect(speed.lines[1].reason).toBe("Doesn't stack with Held (Held)");
+    expect(speed.total).toBe(10);
+    expect(speed.lines[1].reason).toBe(
+      "Replaced by Slowed form (Slowed form), activated later",
+    );
+    expect(speed.setCollision?.winner.label).toBe("Slowed form");
+    expect(speed.setCollision?.others.map((l) => l.label)).toEqual(["Held"]);
+  });
+
+  it("doesn't report one source's own sets as a collision", () => {
+    const engine = createStatEngine([
+      base("ability.dexterity", 14),
+      c("ability.*", 0, { op: "set", label: "Petrified", sourceKey: "p" }),
+      c("ability.dexterity", 3, { op: "set", label: "Petrified", sourceKey: "p" }),
+    ]);
+    const dex = engine.resolve("ability.dexterity");
+    expect(dex.total).toBe(3);
+    expect(dex.setCollision).toBeUndefined();
+    expect(dex.lines[1].reason).toBe(
+      "Replaced by Petrified (Petrified), listed later",
+    );
+  });
+
+  it("reports only the other sources' sets in a collision", () => {
+    const engine = createStatEngine([
+      base("ability.dexterity", 14),
+      c("ability.dexterity", 1, { op: "set", label: "Held", sourceKey: "a" }),
+      c("ability.dexterity", 0, { op: "set", label: "Curse", sourceKey: "b" }),
+      c("ability.dexterity", 3, { op: "set", label: "Curse", sourceKey: "b" }),
+    ]);
+    const dex = engine.resolve("ability.dexterity");
+    expect(dex.total).toBe(3);
+    expect(dex.setCollision?.others.map((l) => l.label)).toEqual(["Held"]);
+  });
+
+  it("suppresses conditional bonuses, which can't apply while set", () => {
+    const engine = createStatEngine([
+      base("ability.strength", 12),
+      c("ability.strength", 2, { condition: "when raging" }),
+      c("ability.strength", 0, { op: "set", label: "Paralyzed" }),
+    ]);
+    const str = engine.resolve("ability.strength");
+    expect(str.total).toBe(0);
+    expect(str.lines[1]).toMatchObject({
+      status: "suppressed",
+      reason: "Overridden by Paralyzed (Paralyzed)",
+    });
+  });
+
+  it("doesn't report sets with the same value as a collision", () => {
+    const engine = createStatEngine([
+      base("ability.dexterity", 14),
+      c("ability.dexterity", 0, { op: "set", label: "Paralyzed" }),
+      c("ability.dexterity", 0, { op: "set", label: "Helpless" }),
+    ]);
+    const dex = engine.resolve("ability.dexterity");
+    expect(dex.total).toBe(0);
+    expect(dex.setCollision).toBeUndefined();
+    expect(dex.lines[1].status).toBe("suppressed");
   });
 
   it("feeds derived stats: Dex 0 is a −5 modifier to AC", () => {
@@ -115,6 +171,16 @@ describe("set", () => {
     const con = engine.resolve("ability.constitution");
     expect(con.hasBase).toBe(false);
     expect(con.lines[0].reason).toBe("No score to set");
+  });
+
+  it("doesn't give a nonability a score from any of several sets", () => {
+    const engine = createStatEngine([
+      c("ability.constitution", 0, { op: "set" }),
+      c("ability.constitution", 3, { op: "set" }),
+    ]);
+    const con = engine.resolve("ability.constitution");
+    expect(con.hasBase).toBe(false);
+    expect(con.lines.every((l) => l.reason === "No score to set")).toBe(true);
   });
 
   it("only shows a conditional set", () => {

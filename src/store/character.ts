@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useParams } from "react-router";
 
 import { queries, useUpdateCharacter } from "./api";
+import { activateSource, deactivateSource } from "./stats/activeSources";
 import {
   characterContributions,
   sourceContributions,
@@ -106,25 +107,14 @@ export function useActivateSource() {
   const character = useCharacter();
   const updateCharacter = useUpdateCharacter();
   return (source: Omit<ActiveSource, "instanceId">) =>
-    updateCharacter({
-      ...character,
-      activeSources: [
-        ...(character.activeSources ?? []),
-        { ...source, instanceId: crypto.randomUUID() },
-      ],
-    });
+    updateCharacter(activateSource(character, source));
 }
 
 export function useDeactivateSource() {
   const character = useCharacter();
   const updateCharacter = useUpdateCharacter();
   return (instanceId: string) =>
-    updateCharacter({
-      ...character,
-      activeSources: (character.activeSources ?? []).filter(
-        (s) => s.instanceId !== instanceId,
-      ),
-    });
+    updateCharacter(deactivateSource(character, instanceId));
 }
 
 export function useAbilityScores() {
