@@ -10,6 +10,7 @@ import {
   sessionMiddleware,
 } from "./auth";
 import { db } from "./db";
+import { trustProxy } from "./proxy";
 import { api } from "./routes";
 
 const PORT = Number(process.env.PORT) || 4002;
@@ -18,12 +19,11 @@ const BUILD_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 
 const app = express();
 
-// Render's proxy sits behind Cloudflare, and each appends to X-Forwarded-For:
-// Cloudflare adds the visitor, then Render's proxy adds the Cloudflare edge.
-// Trusting those two hops makes req.ip the visitor and req.secure true (so the
-// secure session cookie is sent). The rate limiter prefers CF-Connecting-IP
-// (see auth.ts).
-if (isProd) app.set("trust proxy", 2);
+// Requests pass through Cloudflare and then Render's proxies. Trusting Render's
+// socket peer and those addresses (proxy.ts) makes req.ip the visitor and
+// req.secure true (so the secure session cookie is sent). The rate limiter
+// prefers CF-Connecting-IP (see auth.ts).
+if (isProd) app.set("trust proxy", trustProxy);
 
 app.use(
   helmet({

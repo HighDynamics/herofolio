@@ -92,9 +92,12 @@ const failures = new Map<
 >();
 
 // Render sits behind Cloudflare, which sets CF-Connecting-IP to the visitor on
-// every request and overwrites any value the client sent. If it's ever
-// missing, fall back to req.ip, which trust proxy (server.ts) resolves to the
-// visitor from X-Forwarded-For, so visitors still get separate counts.
+// every request and rejected a client-supplied one in our test. If it's ever
+// missing, fall back to req.ip, which trust proxy resolves to the visitor from
+// X-Forwarded-For by skipping Cloudflare's and Render's addresses (proxy.ts),
+// so visitors still get separate counts. A request sent from inside Cloudflare
+// can choose req.ip, so it's fine as this fallback but must not feed any other
+// security decision.
 function clientIp(req: Request) {
   return (isProd && req.get("cf-connecting-ip")) || req.ip || "unknown";
 }
