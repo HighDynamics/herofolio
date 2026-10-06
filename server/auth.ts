@@ -126,9 +126,13 @@ function registerFailure(req: Request) {
   rec.expires = now + LOCK_MS;
   failures.set(ip, rec);
   // Logged so production can confirm each visitor gets their own count, and
-  // that the header and X-Forwarded-For agree.
+  // that the header and X-Forwarded-For agree. The raw X-Forwarded-For shows
+  // the proxy chain if req.ip is ever wrong. The client controls its start, so
+  // only the last 512 characters (the end the proxies appended) are logged.
+  const forwardedFor = (req.get("x-forwarded-for") ?? "").slice(-512);
   console.warn(
-    `Failed auth attempt from ${ip} (req.ip ${req.ip})` +
+    `Failed auth attempt from ${ip} (req.ip ${req.ip}, ` +
+      `X-Forwarded-For ${JSON.stringify(forwardedFor)})` +
       (rec.lockedUntil > now ? ", locked out" : ""),
   );
 }
