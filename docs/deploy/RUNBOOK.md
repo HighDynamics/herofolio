@@ -139,15 +139,15 @@ psql "$HFURL?sslmode=require" -X -c "select count(*) from ethics_reports.donatio
 
 ## 4. Get the code onto `main` [Daniel or Arbor]
 
-Push `deploy/render`, open a PR, and merge it. Both services deploy from
+Push `deploy/render`, open a PR, and merge it. The service deploys from
 `main`.
 
-## 5. Create the services [Daniel · dashboard]
+## 5. Create the service [Daniel · dashboard]
 
 New → **Blueprint** → repo `HighDynamics/herofolio`. Render reads
-`render.yaml` and creates `herofolio-api` (free web service) and `herofolio`
-(static site). It manages only the resources in the file, so ethics-reports and
-the database are untouched. When prompted, enter:
+`render.yaml` and creates one free web service, `herofolio`, which serves both
+the API and the frontend. It manages only the resources in the file, so
+ethics-reports and the database are untouched. When prompted, enter:
 
 | Variable | Value |
 |---|---|
@@ -160,13 +160,10 @@ the database are untouched. When prompted, enter:
 `NODE_ENV=production`, `DB_SCHEMA=herofolio`, and `NODE_VERSION=24` come from
 the file.
 
-If Render gives the API a URL other than `https://herofolio-api.onrender.com`,
-update the `/api/*` rewrite (`render.yaml`, or the static site → Redirects/
-Rewrites) to match, and keep it above `/*`.
-
-The API's start command is `npm run migrate && npm run start:prod`, so its
-first deploy runs the first production migration, as `herofolio`. **[Daniel ·
-dashboard]** In the API's logs, expect:
+Its build runs `npm ci --include=dev && npm run build`. Its start command is
+`npm run migrate && npm run start:prod`, so its first deploy runs the first
+production migration, as `herofolio`. **[Daniel ·
+dashboard]** In the service's logs, expect:
 `Batch 1 applied to "herofolio": …`, `Bootstrapped account …`,
 `API listening …`. If migrations are ever pending at startup, the API logs
 `Refusing to start: N pending migration(s)` and exits.
@@ -186,19 +183,39 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
 ## 7. Verify
 
 1. **[Daniel · terminal]** `curl https://herofolio.onrender.com/api/health`
-   returns `{"ok":true}`, which proves the rewrite reaches the API.
+   returns `{"ok":true}`. (Use the service's real URL if Render assigned
+   another one.)
 2. **[Daniel · browser]** Sign in at `https://herofolio.onrender.com`. Then
    reload: you should still be signed in. If sign-in "works" but a reload
    sends you back to `/login`, the `Secure` cookie isn't being set (trust
-   proxy).
-3. **Client IP through the rewrite.** **[Daniel · browser]** Make one wrong
-   sign-in from Wi-Fi and one from the phone on cellular. **[Daniel ·
-   dashboard]** The API logs show `Failed auth attempt from <ip>` for each,
-   and the two IPs must be **different and be your real ones**. If both show
-   the same Render or Cloudflare address, every visitor shares one lockout
-   bucket: five wrong passwords from anyone would lock out everybody for 15
-   minutes. Fix that before inviting anyone (the simplest fix is one web
-   service serving both, see PLAN.md).
+   proxy). Open the browser console too: Font Awesome icons should render,
+   with no Content-Security-Policy errors.
+3. **Client IP. Do this before you share the invite code with anyone.**
+   **[Daniel · browser]** Make one wrong sign-in from Wi-Fi
+   and one from the phone on cellular (look up each network's public IP
+   first, e.g. at <https://icanhazip.com>). Then **[Daniel · terminal]** try
+   to spoof it:
+
+   ```zsh
+   curl -s https://herofolio.onrender.com/api/auth/login \
+     -H 'Content-Type: application/json' \
+     -H 'CF-Connecting-IP: 1.2.3.4' -H 'X-Forwarded-For: 5.6.7.8' \
+     -d '{"email":"nobody@example.com","password":"wrong-password"}'
+   ```
+
+   **[Daniel · dashboard]** The service's logs show one line per attempt:
+   `Failed auth attempt from <key> (req.ip <ip>)`. For every line, both
+   addresses must be **the real public IP of the network it came from**: the
+   two browser attempts differ, and the curl line shows your own IP, not
+   `1.2.3.4` or `5.6.7.8`.
+
+   **If the logged key isn't your real IP, stop:** don't share the invite
+   code, and report it. A Cloudflare or 10.x address means every visitor
+   shares one lockout bucket (five wrong passwords from anyone would lock
+   everybody out for 15 minutes). A spoofed value means the limit can be
+   bypassed. If only `req.ip` is wrong and the key is right, the fallback's
+   `trust proxy` hop count in `server/server.ts` needs adjusting before
+   launch too.
 4. **[Daniel · terminal]** Rerun `verify-herofolio-role.sql` (all `t`, no
    rows in the second result) and `ethics-reports-row-counts.sql`. Every
    table must still be there. Counts can differ from
@@ -208,9 +225,9 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
 
 ## Rollback
 
-- **App only:** **[Daniel · dashboard]** Suspend or delete `herofolio-api` and
-  `herofolio`. The database is unaffected.
-- **Remove Herofolio from the database:** suspend the API first, then
+- **App only:** **[Daniel · dashboard]** Suspend or delete the `herofolio`
+  service. The database is unaffected.
+- **Remove Herofolio from the database:** suspend the service first, then
   **[Daniel · terminal]** `psql "$PGURL"`:
 
   ```sql
