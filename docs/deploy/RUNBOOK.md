@@ -114,6 +114,15 @@ or schema already exists, it stops with an error **before** the prompt, so it
 can't reset the password. In that case don't run anything else; work out why
 it exists first.
 
+If the password prompt was aborted (Ctrl-C, or a mismatched entry), the role
+and schema exist but the role has no password, and running the script again
+stops at "already exists". To recover, set the password by hand as
+`highdynamics`:
+
+```zsh
+psql "$PGURL" -X -c '\password herofolio'
+```
+
 Add the role to `~/.pgpass`, then verify:
 
 ```zsh

@@ -40,5 +40,10 @@ commit;
 
 -- Reached only if everything above succeeded. psql hashes the password
 -- before sending it, so it never appears in logs.
+--
+-- If this prompt is aborted, the role exists with no password (it can't log
+-- in), and running the script again stops at "already exists". Recover by
+-- setting the password by hand, connected as highdynamics:
+--   psql "$PGURL" -X -c '\password herofolio'
 \echo 'Set the password for herofolio (from step 2):'
 \password herofolio
