@@ -203,7 +203,8 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
    **[Daniel · browser]** Make one wrong sign-in from Wi-Fi
    and one from the phone on cellular (look up each network's public IP
    first, e.g. at <https://icanhazip.com>). Then **[Daniel · terminal]** try
-   to spoof it:
+   to spoof it, **once**. It's a failed sign-in from your own IP, so it counts
+   toward the five-failure lockout along with the Wi-Fi attempt:
 
    ```zsh
    curl -s https://herofolio.onrender.com/api/auth/login \
