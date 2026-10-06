@@ -3,6 +3,11 @@
 --   psql "$PGURL" -X -f docs/deploy/verify-herofolio-role.sql
 -- Every row of the first result should say ok = t, and the second result
 -- (access outside herofolio) should have no rows.
+--
+-- Scope: it covers schemas, relations (tables, views, materialized views,
+-- foreign tables), columns, sequences, and functions. It doesn't cover types
+-- or domains, database-level CONNECT/TEMP (every role gets those from PUBLIC
+-- by default), or default ACLs (pg_default_acl).
 
 \set ON_ERROR_STOP on
 
