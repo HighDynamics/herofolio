@@ -22,7 +22,15 @@ function toEntry({ ownerId, ...row }: Record<string, unknown>) {
   return { ...Object.fromEntries(fields), isSrd: ownerId === null };
 }
 
-function toCharacter({ id, name, data }: Record<string, any>): ICharacter {
+function toCharacter({
+  id,
+  name,
+  data,
+}: {
+  id: string;
+  name: string;
+  data: Omit<ICharacter, "id" | "name">;
+}): ICharacter {
   return { ...data, id, name };
 }
 

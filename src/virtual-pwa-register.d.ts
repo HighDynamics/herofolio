@@ -2,9 +2,9 @@ declare module "virtual:pwa-register" {
   export type RegisterSWOptions = {
     immediate?: boolean;
     onRegistered?: (swUrl: string | ServiceWorker | undefined) => void;
-    onRegisterError?: (err: any) => void;
+    onRegisterError?: (err: unknown) => void;
     // additional options may be provided by the plugin
-    [key: string]: any;
+    [key: string]: unknown;
   };
 
   /**

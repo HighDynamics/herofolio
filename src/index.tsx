@@ -70,4 +70,4 @@ root.render(
 // Register the service worker in production so the app can work offline and be a PWA.
 // Uses the Vite built base URL via import.meta.env.BASE_URL inside serviceWorker module.
 // register the PWA service worker with immediate update strategy
-const updateSW = registerSW({ immediate: true });
+registerSW({ immediate: true });
