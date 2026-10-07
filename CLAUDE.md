@@ -19,9 +19,18 @@ npm start          # Vite (with --host for LAN access) + API on :4002, proxied a
 npm run migrate    # Create the schema if needed and apply migrations
 npm run seed       # Load server/seed/data (SEED_CONFIRM=1 to overwrite existing data)
 npm run typecheck  # Typecheck the frontend and the server
+npm run lint       # ESLint
+npm run format     # Prettier --write (format:check only checks)
+npm test           # Vitest
+npm run audit:prod # npm audit for production dependencies
+npm run check      # What CI runs: format:check, lint, typecheck, test, build
 npm run build      # Production build
 npm run serve      # Preview production build
 ```
+
+CI (`.github/workflows/ci.yml`) runs those checks on every PR and push to main
+as separate jobs: Format, Lint, Typecheck, Test, Build and Dependency audit. See
+`docs/ci-quality.md` for what each tool is and why.
 
 ## Project Structure
 
