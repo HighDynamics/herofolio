@@ -89,7 +89,8 @@ Cheap and built in. Scoped to what ships (`--omit=dev`) and to high and
 critical advisories (`--audit-level=high`), because a moderate advisory in a
 build tool shouldn't block merging. It is a **separate job** from the code
 checks: it can start failing with no code change when a new advisory is
-published, so Daniel can decide whether it should be a required check.
+published, so treat it as a signal to update dependencies rather than a
+reason to block unrelated work.
 Dependabot already opens version-update PRs, so a second updater (Renovate) or
 a paid scanner (Snyk) adds nothing here.
 
@@ -136,10 +137,14 @@ a paid scanner (Snyk) adds nothing here.
   may be unused, and `require()` is allowed in the one `.cjs` script. The
   react-hooks rules found nothing.
 - **Typecheck, test, build:** clean on `main` before any change.
-- **`npm audit` (production dependencies):** fails today with 1 critical, 6
-  high and 1 moderate advisory, among them `react-router` and `vite` (direct)
-  and `tar`, `rollup`, `postcss` (transitive). `npm audit fix` can resolve
-  them with in-range lockfile bumps, but that is a broad dependency change
-  that overlaps the open Dependabot PRs, so it is deliberately not part of
-  this change. Until it is handled, the **Dependency audit** job is red and
-  should not be a required check.
+- **`npm audit` (production dependencies):** failed on `main` with 1
+  critical, 6 high and 1 moderate advisory, among them `react-router` and
+  `vite` (direct) and `tar`, `rollup`, `postcss` (transitive). Fixed with
+  `npm audit fix` (no `--force`, `package.json` unchanged) as its own
+  lockfile-only commit; the production audit now reports 0.
+- **Known and left alone:** a full `npm audit` still reports `shell-quote`
+  1.9.0 (critical, command injection in `quote()`), reached through
+  `concurrently`, which only runs `npm start` on a developer machine. It is
+  not in the build, the deploy or any CI job. `concurrently` 10.0.5 pins that
+  exact `shell-quote` version, so it is waiting on a `concurrently` release;
+  the only automatic fix is a downgrade, so it is not overridden.
