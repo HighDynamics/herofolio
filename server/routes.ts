@@ -1,14 +1,7 @@
 import express from "express";
 import type { Knex } from "knex";
 
-import {
-  changePassword,
-  login,
-  logout,
-  me,
-  requireAuth,
-  signUp,
-} from "./auth";
+import { changePassword, login, logout, me, requireAuth, signUp } from "./auth";
 import { db } from "./db";
 
 // SRD entries (no owner) plus the user's own.

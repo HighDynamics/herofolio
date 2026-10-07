@@ -53,7 +53,14 @@ export function characterContributions(
 
   for (const [ability, score] of Object.entries(abilities.score)) {
     if (score !== null) {
-      push(`ability.${ability as Ability}`, "Score", score, "untyped", "base", true);
+      push(
+        `ability.${ability as Ability}`,
+        "Score",
+        score,
+        "untyped",
+        "base",
+        true,
+      );
     }
   }
 
@@ -96,7 +103,8 @@ export function characterContributions(
     const skill = skillCompendium.find((s) => s.id === ref.id);
     push(`skill.${ref.id}`, "Ranks", ref.ranks, "untyped", "base");
     push(`skill.${ref.id}`, "Misc", ref.miscModifier);
-    if (skill) push(`skill.${ref.id}`, camelToLabel(skill.ability), mod(skill.ability));
+    if (skill)
+      push(`skill.${ref.id}`, camelToLabel(skill.ability), mod(skill.ability));
   }
 
   // 5 ranks in Bluff → +2 on Diplomacy. Synergies are untyped and each is its
@@ -149,7 +157,10 @@ export function scale(v: ScalingValue, level: number) {
 }
 
 function highestCasterLevel(character: ICharacter) {
-  return Math.max(0, ...character.classes.map((c) => c.magic?.casterLevel ?? 0));
+  return Math.max(
+    0,
+    ...character.classes.map((c) => c.magic?.casterLevel ?? 0),
+  );
 }
 
 function resolveTarget(
@@ -190,7 +201,8 @@ export function sourceContributions(
         const level =
           s === "casterLevel"
             ? casterLevel
-            : (character.classes.find((c) => c.name === s.classLevel)?.level ?? 0);
+            : (character.classes.find((c) => c.name === s.classLevel)?.level ??
+              0);
         value = scale(effect.value, level);
       } else {
         value = effect.value;

@@ -14,7 +14,9 @@ const NON_SRD_SKILLS = new Set(["Perception", "Stealth"]);
 
 const email = process.env.BOOTSTRAP_USER_EMAIL;
 if (!email) {
-  console.error("Set BOOTSTRAP_USER_EMAIL to the account that should own the seed data.");
+  console.error(
+    "Set BOOTSTRAP_USER_EMAIL to the account that should own the seed data.",
+  );
   process.exit(1);
 }
 
@@ -23,7 +25,9 @@ try {
     .whereRaw("lower(email) = lower(?)", [email])
     .first();
   const [{ count }] = existingOwner
-    ? await db("characters").where({ ownerId: existingOwner.id }).count({ count: "*" })
+    ? await db("characters")
+        .where({ ownerId: existingOwner.id })
+        .count({ count: "*" })
     : [{ count: 0 }];
   if (Number(count) > 0 && process.env.SEED_CONFIRM !== "1") {
     console.error(
@@ -56,7 +60,10 @@ try {
     const compendium: [string, { id: string }[]][] = [
       [
         "skills",
-        skills.map((s) => ({ ...s, ownerId: ownerIf(NON_SRD_SKILLS.has(s.name)) })),
+        skills.map((s) => ({
+          ...s,
+          ownerId: ownerIf(NON_SRD_SKILLS.has(s.name)),
+        })),
       ],
       [
         "abilities",
@@ -92,7 +99,10 @@ try {
       // Drop SRD rows that are no longer in the seed data.
       await trx(table)
         .whereNull("ownerId")
-        .whereNotIn("id", rows.map((r) => r.id))
+        .whereNotIn(
+          "id",
+          rows.map((r) => r.id),
+        )
         .del();
     }
 
@@ -108,15 +118,22 @@ try {
   });
 
   const counts = await Promise.all(
-    ["skills", "skill_synergies", "abilities", "items", "spells", "characters"].map(
-      async (table) => {
-        const [{ srd, owned }] = await db(table).select(
-          db.raw("count(*) filter (where owner_id is null)::int as srd"),
-          db.raw("count(*) filter (where owner_id = ?)::int as owned", [owner.id]),
-        );
-        return `${table}: ${srd} SRD, ${owned} owned by ${email}`;
-      },
-    ),
+    [
+      "skills",
+      "skill_synergies",
+      "abilities",
+      "items",
+      "spells",
+      "characters",
+    ].map(async (table) => {
+      const [{ srd, owned }] = await db(table).select(
+        db.raw("count(*) filter (where owner_id is null)::int as srd"),
+        db.raw("count(*) filter (where owner_id = ?)::int as owned", [
+          owner.id,
+        ]),
+      );
+      return `${table}: ${srd} SRD, ${owned} owned by ${email}`;
+    }),
   );
   console.log(`Seeded:\n  ${counts.join("\n  ")}`);
 } finally {

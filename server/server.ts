@@ -4,18 +4,17 @@ import helmet from "helmet";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ensureBootstrapUser,
-  refreshSession,
-  sessionMiddleware,
-} from "./auth";
+import { ensureBootstrapUser, refreshSession, sessionMiddleware } from "./auth";
 import { db } from "./db";
 import { trustProxy } from "./proxy";
 import { api } from "./routes";
 
 const PORT = Number(process.env.PORT) || 4002;
 const isProd = process.env.NODE_ENV === "production";
-const BUILD_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../build");
+const BUILD_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../build",
+);
 
 const app = express();
 
@@ -33,7 +32,11 @@ app.use(
         // Google Fonts are already covered by helmet's https: style/font
         // defaults.
         scriptSrc: ["'self'", "https://kit.fontawesome.com"],
-        connectSrc: ["'self'", "https://ka-f.fontawesome.com", "https://ka-p.fontawesome.com"],
+        connectSrc: [
+          "'self'",
+          "https://ka-f.fontawesome.com",
+          "https://ka-p.fontawesome.com",
+        ],
       },
     },
   }),
@@ -57,7 +60,10 @@ if (isProd) {
   // Vite fingerprints everything in assets/, so it can be cached for good.
   app.use(
     "/assets",
-    express.static(path.join(BUILD_DIR, "assets"), { immutable: true, maxAge: "1y" }),
+    express.static(path.join(BUILD_DIR, "assets"), {
+      immutable: true,
+      maxAge: "1y",
+    }),
   );
   app.use(express.static(BUILD_DIR));
   // Client-side routes (/characters/..., /login) all load the app. A missing

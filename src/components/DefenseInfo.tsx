@@ -1,7 +1,7 @@
 import { signed } from "../lib";
 import { useArmorClass, useCharacter, useStat } from "../store/character";
-import { useDiceRoll } from "../store/ui";
 import type { EnergyType } from "../store/stats/types";
+import { useDiceRoll } from "../store/ui";
 import { DiceRollButton } from "./DiceRollButton";
 import { EntityDisclosure } from "./EntityDisclosure";
 import { FadedSeparator } from "./FadedSeparator";
@@ -70,7 +70,9 @@ export const DefenseInfo = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-lg">{name}</span>
                   <div className="flex items-center gap-2">
-                    <span className="tabular-nums text-lg">{signed(stat.total)}</span>
+                    <span className="tabular-nums text-lg">
+                      {signed(stat.total)}
+                    </span>
                     <DiceRollButton onClick={() => roll20(stat.total, name)} />
                   </div>
                 </div>

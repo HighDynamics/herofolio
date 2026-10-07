@@ -55,4 +55,5 @@ const isTrusted = proxyaddr.compile([
 // except through its proxy. That keeps X-Forwarded-Proto trusted, so req.secure
 // and the Secure session cookie don't depend on which address the proxy
 // connects from. Every hop after that must be on the list.
-export const trustProxy = (addr: string, i: number) => i === 0 || isTrusted(addr, i);
+export const trustProxy = (addr: string, i: number) =>
+  i === 0 || isTrusted(addr, i);

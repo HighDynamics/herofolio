@@ -73,16 +73,23 @@ describe("trust proxy by address", () => {
   it("ignores spoofed X-Forwarded-For entries on the left", async () => {
     expect((await server.get(forwardedFor("5.6.7.8"))).ip).toBe(VISITOR);
     // Even one that claims to be a Cloudflare edge.
-    expect((await server.get(forwardedFor("5.6.7.8", "173.245.48.1"))).ip).toBe(VISITOR);
+    expect((await server.get(forwardedFor("5.6.7.8", "173.245.48.1"))).ip).toBe(
+      VISITOR,
+    );
   });
 
   it("doesn't depend on the number of hops", async () => {
-    expect((await server.get(`${VISITOR}, ${CLOUDFLARE_EDGE}`)).ip).toBe(VISITOR);
-    expect((await server.get(`${forwardedFor()}, 10.207.9.9, 100.64.0.1`)).ip).toBe(VISITOR);
+    expect((await server.get(`${VISITOR}, ${CLOUDFLARE_EDGE}`)).ip).toBe(
+      VISITOR,
+    );
+    expect(
+      (await server.get(`${forwardedFor()}, 10.207.9.9, 100.64.0.1`)).ip,
+    ).toBe(VISITOR);
   });
 
   it("resolves an IPv6 visitor through Cloudflare's IPv6 edge", async () => {
-    const ip = (await server.get(`2001:db8::1, 2606:4700::1, ${RENDER_PROXY}`)).ip;
+    const ip = (await server.get(`2001:db8::1, 2606:4700::1, ${RENDER_PROXY}`))
+      .ip;
     expect(ip).toBe("2001:db8::1");
   });
 
@@ -96,10 +103,15 @@ describe("trust proxy by address", () => {
 describe("trust proxy from Render's socket peer", () => {
   it("resolves the visitor from a 10.x peer, plain or IPv4-mapped", () => {
     expect(resolve("10.207.4.18", forwardedFor("5.6.7.8"))).toBe(VISITOR);
-    expect(resolve("::ffff:10.207.4.18", forwardedFor("5.6.7.8"))).toBe(VISITOR);
-    expect(resolve("::ffff:10.207.4.18", "::ffff:104.60.164.120, ::ffff:172.71.147.212")).toBe(
-      "::ffff:104.60.164.120",
+    expect(resolve("::ffff:10.207.4.18", forwardedFor("5.6.7.8"))).toBe(
+      VISITOR,
     );
+    expect(
+      resolve(
+        "::ffff:10.207.4.18",
+        "::ffff:104.60.164.120, ::ffff:172.71.147.212",
+      ),
+    ).toBe("::ffff:104.60.164.120");
   });
 
   // req.secure (and so the Secure cookie) trusts X-Forwarded-Proto only when
@@ -115,7 +127,9 @@ describe("trust proxy from Render's socket peer", () => {
   it("stops at an untrusted hop that isn't Cloudflare", () => {
     // A chain that skipped Cloudflare: its last public hop is req.ip, and
     // anything to the left is ignored.
-    expect(resolve(RENDER_PROXY, `5.6.7.8, 203.0.113.9, ${RENDER_PROXY}`)).toBe("203.0.113.9");
+    expect(resolve(RENDER_PROXY, `5.6.7.8, 203.0.113.9, ${RENDER_PROXY}`)).toBe(
+      "203.0.113.9",
+    );
     // A direct connection with no chain is its own address.
     expect(resolve("203.0.113.9")).toBe("203.0.113.9");
   });

@@ -13,7 +13,11 @@ import {
 } from "./engine";
 import { makeCharacter } from "./testing";
 
-const skill = (id: string, name: string, ability: Ability): CompendiumSkill => ({
+const skill = (
+  id: string,
+  name: string,
+  ability: Ability,
+): CompendiumSkill => ({
   id,
   name,
   ability,
@@ -86,7 +90,11 @@ describe("skill synergies", () => {
   it("stacks synergies from different skills", () => {
     const engine = engineFor(
       makeCharacter({
-        skillRefs: [ranks("bluff", 5), ranks("senseMotive", 5), ranks("diplomacy", 1)],
+        skillRefs: [
+          ranks("bluff", 5),
+          ranks("senseMotive", 5),
+          ranks("diplomacy", 1),
+        ],
         skillSynergyRefs: allSynergies,
       }),
     );
@@ -125,14 +133,29 @@ describe("active sources on a character sheet", () => {
     paralyzed: {
       label: "Paralyzed",
       effects: [
-        { target: "ability.strength", op: "set", bonusType: "untyped", value: 0 },
-        { target: "ability.dexterity", op: "set", bonusType: "untyped", value: 0 },
+        {
+          target: "ability.strength",
+          op: "set",
+          bonusType: "untyped",
+          value: 0,
+        },
+        {
+          target: "ability.dexterity",
+          op: "set",
+          bonusType: "untyped",
+          value: 0,
+        },
       ],
     },
     cursedDex: {
       label: "Curse of clumsiness",
       effects: [
-        { target: "ability.dexterity", op: "set", bonusType: "untyped", value: 3 },
+        {
+          target: "ability.dexterity",
+          op: "set",
+          bonusType: "untyped",
+          value: 3,
+        },
       ],
     },
     haste: {

@@ -113,7 +113,7 @@ instead), and a frontend-only change restarts the API.
     missing, it falls back to `req.ip`, so visitors never collapse into one
     bucket.
   - Failed sign-ins log both values (`Failed auth attempt from <key> (req.ip
-    <ip>)`). The runbook's verify step checks they match the real client and
+<ip>)`). The runbook's verify step checks they match the real client and
     can't be spoofed.
 - `render.yaml`: the one web service, env vars by name only (`sync: false`).
 - `.env.example`: note the production-only settings.

@@ -10,7 +10,10 @@ export const activateSource = (
   instanceId: string = crypto.randomUUID(),
 ): ICharacter => ({
   ...character,
-  activeSources: [...(character.activeSources ?? []), { ...source, instanceId }],
+  activeSources: [
+    ...(character.activeSources ?? []),
+    { ...source, instanceId },
+  ],
 });
 
 export const deactivateSource = (

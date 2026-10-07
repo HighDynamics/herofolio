@@ -79,7 +79,9 @@ describe("set", () => {
     expect(str.total).toBe(0);
     expect(str.hasBase).toBe(true);
     expect(
-      str.lines.filter((l) => l.reason === "Overridden by Paralyzed (Paralyzed)"),
+      str.lines.filter(
+        (l) => l.reason === "Overridden by Paralyzed (Paralyzed)",
+      ),
     ).toHaveLength(3);
   });
 
@@ -102,7 +104,11 @@ describe("set", () => {
     const engine = createStatEngine([
       base("ability.dexterity", 14),
       c("ability.*", 0, { op: "set", label: "Petrified", sourceKey: "p" }),
-      c("ability.dexterity", 3, { op: "set", label: "Petrified", sourceKey: "p" }),
+      c("ability.dexterity", 3, {
+        op: "set",
+        label: "Petrified",
+        sourceKey: "p",
+      }),
     ]);
     const dex = engine.resolve("ability.dexterity");
     expect(dex.total).toBe(3);

@@ -32,8 +32,10 @@ const connection: Knex.PgConnectionConfig = process.env.DATABASE_URL
 // knex's own migration bookkeeping, at it. db/migrate.ts creates the schema.
 export const schema = process.env.DB_SCHEMA || "herofolio";
 
-const toSnake = (s: string) => s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
-const toCamel = (s: string) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+const toSnake = (s: string) =>
+  s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+const toCamel = (s: string) =>
+  s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
 // Rows come back with camelCase keys. Only top-level keys are converted, so
 // jsonb column contents are returned exactly as stored.

@@ -1,7 +1,11 @@
 import { useState } from "react";
 
 import { combine as c, signed } from "../../lib";
-import { useAddSkill, useUpdateCharacter, useUpdateSkill } from "../../store/api";
+import {
+  useAddSkill,
+  useUpdateCharacter,
+  useUpdateSkill,
+} from "../../store/api";
 import {
   useCharacter,
   useAbilityScore,
@@ -181,7 +185,9 @@ function SkillsListItem(p: {
         name: updatedSkill.name,
         armorCheck: updatedSkill.armorCheck,
         isDefault: false,
-      }).catch(() => toast(`"${skill.name}" is a shared skill and can't be edited`));
+      }).catch(() =>
+        toast(`"${skill.name}" is a shared skill and can't be edited`),
+      );
     }
     updateCharacter({ ...character, skillRefs: updatedSkillRefs });
     setName(updatedSkill.name);
