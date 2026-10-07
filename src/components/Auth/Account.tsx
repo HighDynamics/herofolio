@@ -1,8 +1,14 @@
 import { Link, useNavigate } from "react-router";
 
 import { useChangePassword, useLogout } from "../../store/api";
+import {
+  AuthPage,
+  Field,
+  FormError,
+  SubmitButton,
+  formValues,
+} from "./AuthForm";
 import { useUser } from "./RequireAuth";
-import { AuthPage, Field, FormError, SubmitButton, formValues } from "./AuthForm";
 
 export function Account() {
   const user = useUser();
@@ -55,7 +61,9 @@ export function Account() {
             Password changed.
           </p>
         )}
-        <SubmitButton pending={changePassword.isPending}>Change password</SubmitButton>
+        <SubmitButton pending={changePassword.isPending}>
+          Change password
+        </SubmitButton>
       </form>
 
       <div className="mt-12 flex flex-col gap-2 items-start">

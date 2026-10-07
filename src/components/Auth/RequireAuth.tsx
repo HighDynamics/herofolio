@@ -9,7 +9,8 @@ export function RequireAuth() {
   const { pathname } = useLocation();
 
   if (!user) {
-    const next = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
+    const next =
+      pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
     return <Navigate to={`/login${next}`} replace />;
   }
   return <Outlet />;

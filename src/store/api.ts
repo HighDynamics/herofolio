@@ -157,7 +157,9 @@ export function useUpdateCharacter() {
       // Refetch only after the last of several quick saves, so an older
       // response can't overwrite newer optimistic changes.
       if (client.isMutating({ mutationKey: updateCharacterKey }) === 1) {
-        return client.invalidateQueries({ queryKey: queries.characters.queryKey });
+        return client.invalidateQueries({
+          queryKey: queries.characters.queryKey,
+        });
       }
     },
   });
@@ -218,8 +220,12 @@ export const useLogin = () =>
 
 export const useSignUp = () =>
   useSessionChange(
-    (vars: { email: string; password: string; name: string; inviteCode: string }) =>
-      post<{ user: User }>("/auth/signup", vars).then((r) => r.user),
+    (vars: {
+      email: string;
+      password: string;
+      name: string;
+      inviteCode: string;
+    }) => post<{ user: User }>("/auth/signup", vars).then((r) => r.user),
   );
 
 export const useLogout = () =>

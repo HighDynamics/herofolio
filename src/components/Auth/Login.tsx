@@ -32,7 +32,13 @@ export function Login() {
           );
         }}
       >
-        <Field label="Email" name="email" type="email" autoComplete="email" required />
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+        />
         <Field
           label="Password"
           name="password"

@@ -25,7 +25,12 @@ export const base = (target: StatSelector, value: number) =>
 
 // A level 1 human with 10s, no gear and no skills.
 export function makeCharacter(overrides: Partial<ICharacter> = {}): ICharacter {
-  const save = (ability: Ability): Save => ({ base: 0, magic: 0, misc: 0, ability });
+  const save = (ability: Ability): Save => ({
+    base: 0,
+    magic: 0,
+    misc: 0,
+    ability,
+  });
   return {
     id: "test",
     name: "Test",

@@ -133,7 +133,10 @@ export function useAbilityScores() {
             },
           };
         },
-        {} as Record<Ability, { score: number | null; modifier: number | null }>,
+        {} as Record<
+          Ability,
+          { score: number | null; modifier: number | null }
+        >,
       ),
     [engine, abilities],
   );
@@ -230,7 +233,11 @@ export function useCharacterAbilities() {
         .map((ref) => {
           const entry = abilityCompendium.find((a) => a.id === ref.id);
           if (!entry) return;
-          return { ...ref, uses: engine.resolve(`uses.${ref.id}`).total, entry };
+          return {
+            ...ref,
+            uses: engine.resolve(`uses.${ref.id}`).total,
+            entry,
+          };
         })
         .filter(Boolean) as EnrichedAbility[],
     [abilityCompendium, abilityRefs, engine],

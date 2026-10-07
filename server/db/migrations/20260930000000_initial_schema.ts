@@ -17,7 +17,9 @@ export async function up(knex: Knex) {
     t.text("password_hash"); // set once accounts land
     t.timestamps(true, true);
   });
-  await knex.raw("create unique index users_email_unique on users (lower(email))");
+  await knex.raw(
+    "create unique index users_email_unique on users (lower(email))",
+  );
 
   await knex.schema.createTable("skills", (t) => {
     compendiumColumns(knex, t);
@@ -30,8 +32,16 @@ export async function up(knex: Knex) {
     t.text("id").primary().defaultTo(knex.raw("gen_random_uuid()::text"));
     t.uuid("owner_id").references("id").inTable("users").onDelete("CASCADE");
     t.index("owner_id");
-    t.text("from_skill_id").notNullable().references("id").inTable("skills").onDelete("CASCADE");
-    t.text("to_skill_id").notNullable().references("id").inTable("skills").onDelete("CASCADE");
+    t.text("from_skill_id")
+      .notNullable()
+      .references("id")
+      .inTable("skills")
+      .onDelete("CASCADE");
+    t.text("to_skill_id")
+      .notNullable()
+      .references("id")
+      .inTable("skills")
+      .onDelete("CASCADE");
     t.integer("ranks_required").notNullable();
     t.integer("bonus").notNullable();
     t.text("condition");

@@ -75,11 +75,12 @@ that.
    someone entered data in the seconds between them, so a higher count is fine
    and a lower one isn't. If any table has fewer rows, or is missing, stop and
    take the dump again. Then run `dropdb ethics_restore_check`.
+
 3. **[Daniel]** Copy the `.dump` somewhere off this machine as well (an
    encrypted cloud drive or a 1Password document).
 4. **[Daniel · dashboard]** Optional second copy: Dinos and Donuts → Recovery
    → create a logical backup export. The paid plan also has point-in-time
-   recovery (3 days on Hobby), which restores into a *new* database.
+   recovery (3 days on Hobby), which restores into a _new_ database.
 
 ## 2. Generate secrets [Daniel · terminal]
 
@@ -158,13 +159,13 @@ New → **Blueprint** → repo `HighDynamics/herofolio`. Render reads
 the API and the frontend. It manages only the resources in the file, so
 ethics-reports and the database are untouched. When prompted, enter:
 
-| Variable | Value |
-|---|---|
-| `DATABASE_URL` | `postgresql://herofolio:<pw>@dpg-dadju76q1p3s73e0f650-a/dinos_and_donuts`: the **internal** host and the **herofolio** role, never highdynamics, and **no `?sslmode=`** (the URL's sslmode would override the app's TLS settings and fail on the internal self-signed certificate) |
-| `SESSION_SECRET` | from step 2 |
-| `SIGNUP_INVITE_CODE` | from step 2 (leave empty to keep sign-up off) |
-| `BOOTSTRAP_USER_EMAIL` | your login email |
-| `BOOTSTRAP_USER_PASSWORD_HASH` | from step 2 |
+| Variable                       | Value                                                                                                                                                                                                                                                                              |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                 | `postgresql://herofolio:<pw>@dpg-dadju76q1p3s73e0f650-a/dinos_and_donuts`: the **internal** host and the **herofolio** role, never highdynamics, and **no `?sslmode=`** (the URL's sslmode would override the app's TLS settings and fail on the internal self-signed certificate) |
+| `SESSION_SECRET`               | from step 2                                                                                                                                                                                                                                                                        |
+| `SIGNUP_INVITE_CODE`           | from step 2 (leave empty to keep sign-up off)                                                                                                                                                                                                                                      |
+| `BOOTSTRAP_USER_EMAIL`         | your login email                                                                                                                                                                                                                                                                   |
+| `BOOTSTRAP_USER_PASSWORD_HASH` | from step 2                                                                                                                                                                                                                                                                        |
 
 `NODE_ENV=production`, `DB_SCHEMA=herofolio`, and `NODE_VERSION=24` come from
 the file.
@@ -232,6 +233,7 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
    bypassed. If only `req.ip` is wrong and the key is right, report the chain
    from the log: an address in it isn't on the trusted list in
    `server/proxy.ts`, and that needs fixing before launch too.
+
 4. **[Daniel · terminal]** Rerun `verify-herofolio-role.sql` (all `t`, no
    rows in the second result) and `ethics-reports-row-counts.sql`. Every
    table must still be there. Counts can differ from
@@ -255,6 +257,7 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
 
   This was tested as a non-superuser `CREATEROLE` owner on Postgres 18. It
   touches nothing outside the `herofolio` schema and role.
+
 - **If `ethics_reports` were ever damaged:** both routes below take
   ethics-reports offline, so decide which one before acting.
   1. **[Daniel · dashboard]** Suspend ethics-reports so nothing writes during
@@ -295,6 +298,7 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
 
      **Or** use Render's point-in-time recovery (Dinos and Donuts →
      Recovery) to a new database, and repoint ethics-reports at it.
+
   6. **[Daniel · dashboard]** Resume ethics-reports and check it.
 
 ## Troubleshooting
@@ -312,6 +316,7 @@ DATABASE_URL="$HFURL" DATABASE_SSL=true DB_SCHEMA=herofolio \
   ```
 
   Then redeploy (Manual Deploy → Deploy latest commit).
+
 - **"Refusing to start: N pending migration(s)".** Migrations didn't run
   before the server started. Check the deploy log for the `npm run migrate`
   output above it.

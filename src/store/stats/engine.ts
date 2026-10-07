@@ -27,9 +27,7 @@ function stackingGroup(line: StatLine): string {
   if (line.op === "base") return "base";
   // Penalties stack regardless of type, except with the same source.
   if (line.amount < 0) return `penalty|${line.sourceKey}`;
-  const type = line.enhances
-    ? `enhancement(${line.enhances})`
-    : line.bonusType;
+  const type = line.enhances ? `enhancement(${line.enhances})` : line.bonusType;
   return ALWAYS_STACKS.includes(line.bonusType)
     ? `${type}|${line.sourceKey}`
     : type;
@@ -132,7 +130,9 @@ export function createStatEngine(contributions: Contribution[]) {
     const slots = new Set(
       contributions
         .map((c) => c.target)
-        .filter((t): t is StatKey => t.startsWith("maxDex.") && t !== "maxDex.*"),
+        .filter(
+          (t): t is StatKey => t.startsWith("maxDex.") && t !== "maxDex.*",
+        ),
     );
     const caps = [...slots]
       .map((slot) => resolve(slot))

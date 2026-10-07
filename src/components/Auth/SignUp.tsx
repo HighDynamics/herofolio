@@ -2,7 +2,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate } from "react-router";
 
 import { queries, useSignUp } from "../../store/api";
-import { AuthPage, Field, FormError, SubmitButton, formValues } from "./AuthForm";
+import {
+  AuthPage,
+  Field,
+  FormError,
+  SubmitButton,
+  formValues,
+} from "./AuthForm";
 
 export function SignUp() {
   const user = useSuspenseQuery(queries.me).data;
@@ -17,7 +23,9 @@ export function SignUp() {
         className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          const { name, email, password, inviteCode } = formValues(e.currentTarget);
+          const { name, email, password, inviteCode } = formValues(
+            e.currentTarget,
+          );
           signUp.mutate(
             { name, email, password, inviteCode },
             { onSuccess: () => navigate("/", { replace: true }) },
@@ -25,7 +33,13 @@ export function SignUp() {
         }}
       >
         <Field label="Name" name="name" autoComplete="name" />
-        <Field label="Email" name="email" type="email" autoComplete="email" required />
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+        />
         <Field
           label="Password (8+ characters)"
           name="password"
@@ -34,7 +48,12 @@ export function SignUp() {
           minLength={8}
           required
         />
-        <Field label="Invite code" name="inviteCode" autoComplete="off" required />
+        <Field
+          label="Invite code"
+          name="inviteCode"
+          autoComplete="off"
+          required
+        />
         <FormError error={signUp.error} />
         <SubmitButton pending={signUp.isPending}>Create account</SubmitButton>
       </form>

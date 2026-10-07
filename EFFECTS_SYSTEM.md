@@ -7,15 +7,15 @@ spell or item stacks correctly against what's already on the sheet.
 
 ## Pieces
 
-| File | Role |
-|---|---|
-| `src/store/stats/types.ts` | Stat keys, `EffectDef` (authoring), `ActiveSource` (character), `Contribution`/`ResolvedStat` (engine) |
-| `src/store/stats/engine.ts` | `createStatEngine(contributions)` → `resolve(key)` (`{ total, hasBase, lines }`) and `maxDex()`; stacking, set, max Dex; `resolveArmorClass` |
-| `src/store/stats/contributions.ts` | `characterContributions` (stored sheet values and skill synergies → contributions), `sourceContributions` (active sources → contributions) |
-| `src/store/stats/activeSources.ts` | `activateSource`/`deactivateSource`: keep `activeSources` in activation order (never sort or dedupe it) |
-| `src/store/character.ts` | `useStatEngine` (one memoized engine per version of the data); hooks `useStat`, `useArmorClass`, `useActiveSources`, `useActivateSource`, `useDeactivateSource` |
-| `src/components/StatBreakdown.tsx` | Renders a stat's lines (applied / suppressed / conditional); a suppressed line's `reason` is its tooltip |
-| `src/store/stats/*.test.ts` | Vitest tests for the engine and contributions (`npm test`) |
+| File                               | Role                                                                                                                                                            |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/store/stats/types.ts`         | Stat keys, `EffectDef` (authoring), `ActiveSource` (character), `Contribution`/`ResolvedStat` (engine)                                                          |
+| `src/store/stats/engine.ts`        | `createStatEngine(contributions)` → `resolve(key)` (`{ total, hasBase, lines }`) and `maxDex()`; stacking, set, max Dex; `resolveArmorClass`                    |
+| `src/store/stats/contributions.ts` | `characterContributions` (stored sheet values and skill synergies → contributions), `sourceContributions` (active sources → contributions)                      |
+| `src/store/stats/activeSources.ts` | `activateSource`/`deactivateSource`: keep `activeSources` in activation order (never sort or dedupe it)                                                         |
+| `src/store/character.ts`           | `useStatEngine` (one memoized engine per version of the data); hooks `useStat`, `useArmorClass`, `useActiveSources`, `useActivateSource`, `useDeactivateSource` |
+| `src/components/StatBreakdown.tsx` | Renders a stat's lines (applied / suppressed / conditional); a suppressed line's `reason` is its tooltip                                                        |
+| `src/store/stats/*.test.ts`        | Vitest tests for the engine and contributions (`npm test`)                                                                                                      |
 
 ## Data flow
 
@@ -68,43 +68,61 @@ Effects may target wildcards: `ability.*`, `save.*`, `skill.*`, `attack.*`, `dam
 ```ts
 // server/seed/data/spells — on the ISpell entry
 effects: [
-  { target: "ac", bonusType: "enhancement", enhances: "naturalArmor",
-    value: { scale: "casterLevel", base: 2, per: 1, every: 3, startAt: 3, max: 5 } },
-]
+  {
+    target: "ac",
+    bonusType: "enhancement",
+    enhances: "naturalArmor",
+    value: {
+      scale: "casterLevel",
+      base: 2,
+      per: 1,
+      every: 3,
+      startAt: 3,
+      max: 5,
+    },
+  },
+];
 
 // resist energy — target picked on activation
 effects: [
-  { target: { prefix: "resist", choice: "energy" }, op: "base", bonusType: "untyped",
-    value: { scale: "casterLevel", base: 10, per: 10, every: 4, startAt: 3, max: 30 } },
-]
+  {
+    target: { prefix: "resist", choice: "energy" },
+    op: "base",
+    bonusType: "untyped",
+    value: {
+      scale: "casterLevel",
+      base: 10,
+      per: 10,
+      every: 4,
+      startAt: 3,
+      max: 30,
+    },
+  },
+];
 
 // paralyzed (or hold person) — set
 effects: [
   { target: "ability.strength", op: "set", bonusType: "untyped", value: 0 },
   { target: "ability.dexterity", op: "set", bonusType: "untyped", value: 0 },
-]
+];
 
 // haste — speed bonus to the modes the character has
-effects: [
-  { target: "speed.*", bonusType: "enhancement", value: 30 },
-]
+effects: [{ target: "speed.*", bonusType: "enhancement", value: 30 }];
 
 // full plate (an item) — armor bonus and max Dex +1
 effects: [
   { target: "ac", bonusType: "armor", value: 8 },
   { target: "maxDex.armor", op: "base", bonusType: "untyped", value: 1 },
-]
+];
 
 // tower shield — max Dex +2; heavy load would be maxDex.load base 1
 effects: [
   { target: "ac", bonusType: "shield", value: 4 },
   { target: "maxDex.shield", op: "base", bonusType: "untyped", value: 2 },
-]
+];
 
 // a feature that raises the armor's max Dex (use maxDex.* to raise every cap)
-effects: [
-  { target: "maxDex.armor", bonusType: "untyped", value: 1 },
-]
+effects: [{ target: "maxDex.armor", bonusType: "untyped", value: 1 }];
 ```
 
 Skill synergies aren't effects: they're `CompendiumSkillSynergy` entries
@@ -117,8 +135,17 @@ Skill synergies aren't effects: they're `CompendiumSkillSynergy` entries
 ```ts
 const activate = useActivateSource();
 activate({ ref: { kind: "spell", id: "haste" } });
-activate({ ref: { kind: "spell", id: "resist-energy" }, choices: { energy: "fire" }, casterLevel: 9 });
-activate({ custom: { label: "Charging", effects: [{ target: "ac", bonusType: "untyped", value: -2 }] } });
+activate({
+  ref: { kind: "spell", id: "resist-energy" },
+  choices: { energy: "fire" },
+  casterLevel: 9,
+});
+activate({
+  custom: {
+    label: "Charging",
+    effects: [{ target: "ac", bonusType: "untyped", value: -2 }],
+  },
+});
 
 useDeactivateSource()(instanceId);
 ```

@@ -15,7 +15,8 @@ const ActiveAndPassiveAbilities = () => {
                 <div className="text-lg">{ability.entry.name}</div>
               }
             >
-              {ability.entry.description || "A description of this ability goes here"}
+              {ability.entry.description ||
+                "A description of this ability goes here"}
             </EntityDisclosure>
           ))}
         </div>

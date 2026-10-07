@@ -1,11 +1,11 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --font-sans:
-    'Jost', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    "Jost", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif:
-    'Faustina', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+    "Faustina", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 /*
@@ -36,6 +36,6 @@
   }
 
   .text-label {
-    @apply font-sans font-bold uppercase tracking-wider opacity-80;
+    @apply font-sans font-bold tracking-wider uppercase opacity-80;
   }
 }

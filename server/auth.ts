@@ -34,8 +34,13 @@ const DUMMY_HASH = bcrypt.hashSync("unused-placeholder", BCRYPT_ROUNDS);
 
 const sessionSecret = process.env.SESSION_SECRET || DEV_SESSION_SECRET;
 // The placeholder is public (it's in .env.example), so it can't sign real cookies.
-if (isProd && (sessionSecret === DEV_SESSION_SECRET || sessionSecret.length < 32)) {
-  throw new Error("SESSION_SECRET must be set to a random value of 32+ characters in production");
+if (
+  isProd &&
+  (sessionSecret === DEV_SESSION_SECRET || sessionSecret.length < 32)
+) {
+  throw new Error(
+    "SESSION_SECRET must be set to a random value of 32+ characters in production",
+  );
 }
 
 const PgSession = connectPgSimple(session);
@@ -111,7 +116,8 @@ function registerFailure(req: Request) {
   const ip = clientIp(req);
   const now = Date.now();
   if (failures.size > PRUNE_THRESHOLD) {
-    for (const [key, rec] of failures) if (rec.expires <= now) failures.delete(key);
+    for (const [key, rec] of failures)
+      if (rec.expires <= now) failures.delete(key);
   }
   const existing = failures.get(ip);
   const rec =
@@ -137,7 +143,9 @@ function registerFailure(req: Request) {
   );
 }
 
-const tooManyAttempts = { error: "Too many attempts. Try again in a few minutes." };
+const tooManyAttempts = {
+  error: "Too many attempts. Try again in a few minutes.",
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -210,7 +218,9 @@ export const signUp: RequestHandler = async (req, res) => {
   }
   const fields = stringFields(req.body, ["email", "password", "inviteCode"]);
   if (!fields) {
-    res.status(400).json({ error: "Email, password, and invite code are required" });
+    res
+      .status(400)
+      .json({ error: "Email, password, and invite code are required" });
     return;
   }
   const { email, password, inviteCode } = fields;
@@ -221,7 +231,9 @@ export const signUp: RequestHandler = async (req, res) => {
     return;
   }
   if (password.length < MIN_PASSWORD_LEN) {
-    res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LEN} characters` });
+    res.status(400).json({
+      error: `Password must be at least ${MIN_PASSWORD_LEN} characters`,
+    });
     return;
   }
   // An existing row, even one without a password yet, can't be claimed here.
@@ -251,7 +263,10 @@ export const login: RequestHandler = async (req, res) => {
     return;
   }
   const user = await findByEmail(fields.email);
-  const ok = await bcrypt.compare(fields.password, user?.passwordHash ?? DUMMY_HASH);
+  const ok = await bcrypt.compare(
+    fields.password,
+    user?.passwordHash ?? DUMMY_HASH,
+  );
   if (!user?.passwordHash || !ok) {
     registerFailure(req);
     res.status(401).json({ error: "Invalid email or password" });
@@ -300,11 +315,15 @@ export const changePassword: RequestHandler = async (req, res) => {
   }
   const { currentPassword, newPassword } = fields;
   if (newPassword.length < MIN_PASSWORD_LEN) {
-    res.status(400).json({ error: `New password must be at least ${MIN_PASSWORD_LEN} characters` });
+    res.status(400).json({
+      error: `New password must be at least ${MIN_PASSWORD_LEN} characters`,
+    });
     return;
   }
   const user: UserRow = await db("users").where({ id: req.userId }).first();
-  if (!(await bcrypt.compare(currentPassword, user.passwordHash ?? DUMMY_HASH))) {
+  if (
+    !(await bcrypt.compare(currentPassword, user.passwordHash ?? DUMMY_HASH))
+  ) {
     registerFailure(req);
     res.status(403).json({ error: "Current password is incorrect" });
     return;

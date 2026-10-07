@@ -1,6 +1,5 @@
-import { expect, it } from "vitest";
-
 import { signed } from ".";
+import { expect, it } from "vitest";
 
 it("signs bonuses, including 0 and penalties", () => {
   expect(signed(3)).toBe("+3");
