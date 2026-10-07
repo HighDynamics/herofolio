@@ -88,9 +88,11 @@ so it is the type analysis layer; no extra tool needed. `npm test` runs Vitest.
 Cheap and built in. Scoped to what ships (`--omit=dev`) and to high and
 critical advisories (`--audit-level=high`), because a moderate advisory in a
 build tool shouldn't block merging. It is a **separate job** from the code
-checks: it can start failing with no code change when a new advisory is
-published, so treat it as a signal to update dependencies rather than a
-reason to block unrelated work.
+checks, and like the other five it is a **required check** on `main`. Because
+it can start failing with no code change when a new advisory is published, a
+red audit means updating the affected dependency (usually `npm audit fix`, as
+its own lockfile-only commit) before merging. A repo admin can bypass the
+check for a hotfix.
 Dependabot already opens version-update PRs, so a second updater (Renovate) or
 a paid scanner (Snyk) adds nothing here.
 

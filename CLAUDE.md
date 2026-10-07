@@ -29,8 +29,9 @@ npm run serve      # Preview production build
 ```
 
 CI (`.github/workflows/ci.yml`) runs those checks on every PR and push to main
-as separate jobs: Format, Lint, Typecheck, Test, Build and Dependency audit. See
-`docs/ci-quality.md` for what each tool is and why.
+as separate jobs: Format, Lint, Typecheck, Test, Build and Dependency audit. All
+six are required checks on main. See `docs/ci-quality.md` for what each tool is
+and why.
 
 ## Project Structure
 
