@@ -20,7 +20,7 @@ export function MiscInfo() {
       ["swim", useStat("speed.swim").total],
       ["burrow", useStat("speed.burrow").total],
     ] as const
-  ).filter(([_, value]) => value > 0);
+  ).filter(([, value]) => value > 0);
   return (
     <section>
       <Heading>Misc</Heading>

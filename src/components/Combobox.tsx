@@ -5,7 +5,7 @@ import { combine as c } from "../lib";
 type Option = {
   id: string;
   name: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export function Combobox<T>(

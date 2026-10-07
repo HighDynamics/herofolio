@@ -84,7 +84,7 @@ function SkillsListItem(p: {
   const [name, setName] = useState(skill.name);
   const [ranks, setRanks] = useState(skill.ranks.toString());
   const [miscMod, setMiscMod] = useState(skill.miscModifier.toString());
-  const [skillAbility, setSkillAbility] = useState(skill.ability);
+  const [skillAbility] = useState(skill.ability);
   const [isClassSkill, setIsClassSkill] = useState(skill.classSkill);
   const [hasArmorCheckPenalty, setHasArmorCheckPenalty] = useState(
     skill.armorCheck,
@@ -231,7 +231,7 @@ function SkillsListItem(p: {
     >
       <div
         onClick={(e) => {
-          isEditing && e.stopPropagation();
+          if (isEditing) e.stopPropagation();
         }}
       >
         {isDeleting && (
@@ -440,9 +440,6 @@ function SkillsListItem(p: {
 
 export function Skills() {
   const skills = useCharacterSkills();
-  const character = useCharacter();
-  const updateCharacter = useUpdateCharacter();
-  const addSkill = useAddSkill();
   const unusedSkills = useSkillCompendium()
     .skills.filter((compSkill) => skills.every((s) => s.id !== compSkill.id))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -450,8 +447,6 @@ export function Skills() {
   const [query, setQuery] = useState("");
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [skillToAdd, setSkillToAdd] = useState<EnrichedSkill | null>(null);
-
-  const toast = useToast();
 
   const sortedSkills = [...skills].sort((a, b) => a.name.localeCompare(b.name));
 
